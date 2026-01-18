@@ -205,6 +205,26 @@ repositories (1) ──── (N) repository_metrics
 3. **Database Connection**
    Ensure your Neon database allows connections from `*.vercel.app`
 
+### GitHub Actions + Vercel (Automated)
+
+For automatic deployments from GitHub to Vercel:
+
+1. **GitHub Secrets Setup**
+   Go to your GitHub repository → Settings → Secrets and variables → Actions
+
+   Add these secrets:
+   - `VERCEL_TOKEN`: Your Vercel token (get from Vercel dashboard → Account → Tokens)
+   - `VERCEL_ORG_ID`: Your Vercel organization ID
+   - `VERCEL_PROJECT_ID`: Your Vercel project ID
+
+2. **Environment Variables**
+   Set production environment variables in Vercel dashboard (same as manual setup)
+
+3. **Automatic Deployment**
+   - Push to `main` branch triggers automatic deployment
+   - Pull requests get preview deployments
+   - All builds include linting and type checking
+
 ### Docker Deployment
 
 ```dockerfile
