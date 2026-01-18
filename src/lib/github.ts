@@ -35,9 +35,9 @@ export interface GitHubCommit {
   commit: {
     message: string;
     author: {
-      name: string | null;
-      email: string | null;
-      date: string | null;
+      name?: string;
+      email?: string;
+      date?: string;
     } | null;
   };
   author: {
@@ -92,7 +92,7 @@ export class GitHubClient {
         type: 'owner',
       });
 
-      return response.data;
+      return response.data as GitHubRepository[];
     } catch (error) {
       console.error('Error fetching repositories:', error);
       throw new Error('Failed to fetch repositories');
@@ -161,7 +161,7 @@ export class GitHubClient {
         per_page: perPage,
       });
 
-      return response.data;
+      return response.data as GitHubCommit[];
     } catch (error) {
       console.error('Error fetching commits:', error);
       throw new Error('Failed to fetch repository commits');
@@ -219,7 +219,7 @@ export class GitHubClient {
         ? Math.round((commits.length / 4) * 7) // Assuming 4 weeks of history
         : 0;
 
-      const lastCommit = commits[0]?.commit.author.date || new Date().toISOString();
+      const lastCommit = commits[0]?.commit?.author?.date || new Date().toISOString();
 
       return {
         linesOfCode: Math.round(linesOfCode),
@@ -244,7 +244,7 @@ export class GitHubClient {
         per_page: 50,
       });
 
-      return response.data.items;
+      return response.data.items as GitHubRepository[];
     } catch (error) {
       console.error('Error searching repositories:', error);
       throw new Error('Failed to search repositories');
@@ -309,7 +309,7 @@ export class GitHubClient {
       const response = await this.graphqlClient(query, {
         owner,
         repo,
-      });
+      }) as any;
 
       return response.repository;
     } catch (error) {
