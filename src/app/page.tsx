@@ -1,65 +1,255 @@
-import Image from "next/image";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import {
+  ArrowRight,
+  Shield,
+  TrendingUp,
+  Code,
+  Zap,
+  Github,
+  CheckCircle,
+  Star,
+  Users,
+  BarChart3,
+  FileText,
+  Share2
+} from "lucide-react";
+import { SignedIn, SignedOut, SignInButton } from "@clerk/nextjs";
 
 export default function Home() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100 dark:from-slate-950 dark:via-slate-900 dark:to-slate-800">
+      {/* Navigation */}
+      <nav className="border-b bg-white/80 backdrop-blur-sm dark:bg-slate-900/80">
+        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
+          <div className="flex items-center space-x-2">
+            <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
+              <Code className="w-5 h-5 text-white" />
+            </div>
+            <span className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+              CodeSentinel
+            </span>
+          </div>
+          <div className="flex items-center space-x-4">
+            <SignedOut>
+              <SignInButton mode="modal">
+                <Button variant="ghost">Sign In</Button>
+              </SignInButton>
+            </SignedOut>
+            <SignedIn>
+              <Link href="/dashboard">
+                <Button>Go to Dashboard</Button>
+              </Link>
+            </SignedIn>
+          </div>
+        </div>
+      </nav>
+
+      {/* Hero Section */}
+      <section className="container mx-auto px-4 py-20 text-center">
+        <div className="max-w-4xl mx-auto">
+          <Badge variant="secondary" className="mb-6">
+            🚀 Trusted by 50+ Engineering Teams
+          </Badge>
+          <h1 className="text-5xl md:text-7xl font-bold mb-6 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 dark:from-white dark:via-slate-200 dark:to-white bg-clip-text text-transparent">
+            AI-Powered GitHub
+            <br />
+            Repository Analysis
           </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+          <p className="text-xl text-slate-600 dark:text-slate-400 mb-8 max-w-2xl mx-auto leading-relaxed">
+            Transform your engineering management with intelligent code analysis.
+            Identify tech debt, security vulnerabilities, and performance bottlenecks
+            before they impact your team.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+            <SignedOut>
+              <SignInButton mode="modal">
+                <Button size="lg" className="text-lg px-8 py-6">
+                  Start Free Analysis
+                  <ArrowRight className="ml-2 w-5 h-5" />
+                </Button>
+              </SignInButton>
+            </SignedOut>
+            <SignedIn>
+              <Link href="/dashboard">
+                <Button size="lg" className="text-lg px-8 py-6">
+                  Go to Dashboard
+                  <ArrowRight className="ml-2 w-5 h-5" />
+                </Button>
+              </Link>
+            </SignedIn>
+            <Button variant="outline" size="lg" className="text-lg px-8 py-6">
+              Watch Demo
+            </Button>
+          </div>
+        </div>
+      </section>
+
+      {/* Features Grid */}
+      <section className="container mx-auto px-4 py-20">
+        <div className="text-center mb-16">
+          <h2 className="text-3xl md:text-4xl font-bold mb-4">
+            Everything You Need to Analyze Code Quality
+          </h2>
+          <p className="text-lg text-slate-600 dark:text-slate-400 max-w-2xl mx-auto">
+            From real-time metrics to actionable insights, CodeSentinel gives you
+            the complete picture of your repository health.
           </p>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <Card className="border-0 shadow-lg hover:shadow-xl transition-shadow">
+            <CardHeader>
+              <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900 rounded-lg flex items-center justify-center mb-4">
+                <Shield className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+              </div>
+              <CardTitle>Security Analysis</CardTitle>
+              <CardDescription>
+                Detect security vulnerabilities, exposed secrets, and potential attack vectors
+                in your codebase with AI-powered analysis.
+              </CardDescription>
+            </CardHeader>
+          </Card>
+
+          <Card className="border-0 shadow-lg hover:shadow-xl transition-shadow">
+            <CardHeader>
+              <div className="w-12 h-12 bg-green-100 dark:bg-green-900 rounded-lg flex items-center justify-center mb-4">
+                <TrendingUp className="w-6 h-6 text-green-600 dark:text-green-400" />
+              </div>
+              <CardTitle>Tech Debt Scoring</CardTitle>
+              <CardDescription>
+                Get quantitative tech debt scores with detailed breakdowns of code quality
+                issues, complexity metrics, and maintenance costs.
+              </CardDescription>
+            </CardHeader>
+          </Card>
+
+          <Card className="border-0 shadow-lg hover:shadow-xl transition-shadow">
+            <CardHeader>
+              <div className="w-12 h-12 bg-purple-100 dark:bg-purple-900 rounded-lg flex items-center justify-center mb-4">
+                <Zap className="w-6 h-6 text-purple-600 dark:text-purple-400" />
+              </div>
+              <CardTitle>Performance Insights</CardTitle>
+              <CardDescription>
+                Identify performance bottlenecks, memory leaks, and optimization
+                opportunities with comprehensive code analysis.
+              </CardDescription>
+            </CardHeader>
+          </Card>
+
+          <Card className="border-0 shadow-lg hover:shadow-xl transition-shadow">
+            <CardHeader>
+              <div className="w-12 h-12 bg-orange-100 dark:bg-orange-900 rounded-lg flex items-center justify-center mb-4">
+                <BarChart3 className="w-6 h-6 text-orange-600 dark:text-orange-400" />
+              </div>
+              <CardTitle>Repository Metrics</CardTitle>
+              <CardDescription>
+                Track lines of code, contributor activity, language distribution,
+                and commit frequency with interactive dashboards.
+              </CardDescription>
+            </CardHeader>
+          </Card>
+
+          <Card className="border-0 shadow-lg hover:shadow-xl transition-shadow">
+            <CardHeader>
+              <div className="w-12 h-12 bg-red-100 dark:bg-red-900 rounded-lg flex items-center justify-center mb-4">
+                <FileText className="w-6 h-6 text-red-600 dark:text-red-400" />
+              </div>
+              <CardTitle>PDF Reports</CardTitle>
+              <CardDescription>
+                Generate professional PDF reports with actionable recommendations,
+                code examples, and priority-ranked fixes.
+              </CardDescription>
+            </CardHeader>
+          </Card>
+
+          <Card className="border-0 shadow-lg hover:shadow-xl transition-shadow">
+            <CardHeader>
+              <div className="w-12 h-12 bg-teal-100 dark:bg-teal-900 rounded-lg flex items-center justify-center mb-4">
+                <Share2 className="w-6 h-6 text-teal-600 dark:text-teal-400" />
+              </div>
+              <CardTitle>Shareable Links</CardTitle>
+              <CardDescription>
+                Share analysis results with stakeholders via secure, time-limited links
+                without exposing your repository data.
+              </CardDescription>
+            </CardHeader>
+          </Card>
         </div>
-      </main>
+      </section>
+
+      {/* Stats Section */}
+      <section className="bg-slate-900 dark:bg-black py-20">
+        <div className="container mx-auto px-4">
+          <div className="grid md:grid-cols-4 gap-8 text-center">
+            <div>
+              <div className="text-4xl font-bold text-white mb-2">50+</div>
+              <div className="text-slate-400">Engineering Teams</div>
+            </div>
+            <div>
+              <div className="text-4xl font-bold text-white mb-2">10K+</div>
+              <div className="text-slate-400">Repos Analyzed</div>
+            </div>
+            <div>
+              <div className="text-4xl font-bold text-white mb-2">95%</div>
+              <div className="text-slate-400">Accuracy Rate</div>
+            </div>
+            <div>
+              <div className="text-4xl font-bold text-white mb-2">24/7</div>
+              <div className="text-slate-400">AI Analysis</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* CTA Section */}
+      <section className="container mx-auto px-4 py-20 text-center">
+        <div className="max-w-2xl mx-auto">
+          <h2 className="text-3xl md:text-4xl font-bold mb-6">
+            Ready to Transform Your Code Quality?
+          </h2>
+          <p className="text-lg text-slate-600 dark:text-slate-400 mb-8">
+            Join leading engineering teams who trust CodeSentinel to maintain
+            high-quality, secure, and performant codebases.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <SignedOut>
+              <SignInButton mode="modal">
+                <Button size="lg" className="text-lg px-8 py-6">
+                  Start Your First Analysis
+                  <Github className="ml-2 w-5 h-5" />
+                </Button>
+              </SignInButton>
+            </SignedOut>
+            <SignedIn>
+              <Link href="/dashboard">
+                <Button size="lg" className="text-lg px-8 py-6">
+                  Go to Dashboard
+                  <ArrowRight className="ml-2 w-5 h-5" />
+                </Button>
+              </Link>
+            </SignedIn>
+          </div>
+          <p className="text-sm text-slate-500 mt-4">
+            Free tier includes 5 repositories. No credit card required.
+          </p>
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer className="border-t bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm">
+        <div className="container mx-auto px-4 py-8">
+          <div className="flex items-center justify-center space-x-2">
+            <div className="w-6 h-6 bg-gradient-to-r from-blue-600 to-purple-600 rounded flex items-center justify-center">
+              <Code className="w-4 h-4 text-white" />
+            </div>
+            <span className="font-semibold">CodeSentinel</span>
+            <span className="text-slate-500">© 2024</span>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }

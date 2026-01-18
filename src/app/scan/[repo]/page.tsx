@@ -1,0 +1,74 @@
+import { Suspense } from 'react';
+import { notFound } from 'next/navigation';
+import { ScanHeader } from '@/components/scan/scan-header';
+import { ScanProgress } from '@/components/scan/scan-progress';
+import { ScanResults } from '@/components/scan/scan-results';
+import { Skeleton } from '@/components/ui/skeleton';
+
+interface ScanPageProps {
+  params: {
+    repo: string;
+  };
+}
+
+export default function ScanPage({ params }: ScanPageProps) {
+  const repoName = decodeURIComponent(params.repo);
+
+  // In a real app, you'd validate the repo exists and user has access
+  if (!repoName || !repoName.includes('/')) {
+    notFound();
+  }
+
+  return (
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
+      <ScanHeader repoName={repoName} />
+
+      <div className="container mx-auto px-4 py-8">
+        <Suspense fallback={<ScanProgressSkeleton />}>
+          <ScanProgress repoName={repoName} />
+        </Suspense>
+
+        <Suspense fallback={<ScanResultsSkeleton />}>
+          <ScanResults repoName={repoName} />
+        </Suspense>
+      </div>
+    </div>
+  );
+}
+
+function ScanProgressSkeleton() {
+  return (
+    <div className="bg-white dark:bg-slate-800 rounded-lg p-6 mb-8">
+      <div className="flex items-center justify-between mb-4">
+        <Skeleton className="h-6 w-48" />
+        <Skeleton className="h-6 w-24" />
+      </div>
+      <Skeleton className="h-2 w-full mb-4" />
+      <Skeleton className="h-4 w-64" />
+    </div>
+  );
+}
+
+function ScanResultsSkeleton() {
+  return (
+    <div className="space-y-6">
+      {Array.from({ length: 3 }).map((_, i) => (
+        <div key={i} className="bg-white dark:bg-slate-800 rounded-lg p-6">
+          <Skeleton className="h-6 w-32 mb-4" />
+          <div className="space-y-3">
+            {Array.from({ length: 4 }).map((_, j) => (
+              <div key={j} className="flex items-center space-x-4">
+                <Skeleton className="w-8 h-8 rounded-full" />
+                <div className="flex-1">
+                  <Skeleton className="h-4 w-full mb-1" />
+                  <Skeleton className="h-3 w-3/4" />
+                </div>
+                <Skeleton className="h-6 w-16" />
+              </div>
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
