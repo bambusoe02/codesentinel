@@ -85,7 +85,7 @@ code-sentinel/
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/yourusername/codesentinel.git
+   git clone https://github.com/bambusoe02/codesentinel.git
    cd codesentinel
    ```
 
@@ -390,8 +390,8 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## 📞 Support
 
 - **Documentation**: [docs.codesentinel.app](https://docs.codesentinel.app)
-- **Issues**: [GitHub Issues](https://github.com/yourusername/codesentinel/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/yourusername/codesentinel/discussions)
+- **Issues**: [GitHub Issues](https://github.com/bambusoe02/codesentinel/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/bambusoe02/codesentinel/discussions)
 - **Email**: support@codesentinel.app
 
 ---
