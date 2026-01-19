@@ -19,12 +19,29 @@ interface Repository {
   topics: string[];
 }
 
+interface AnalysisIssue {
+  id: string;
+  type: 'security' | 'performance' | 'maintainability' | 'reliability';
+  severity: 'low' | 'medium' | 'high' | 'critical';
+  title: string;
+  description?: string;
+}
+
+interface Recommendation {
+  id: string;
+  type: 'immediate' | 'short-term' | 'long-term';
+  title: string;
+  description: string;
+  priority: number;
+  impact: string;
+}
+
 interface AnalysisReport {
   id: string;
   repositoryId: string;
   overallScore: number;
-  issues: any[];
-  recommendations: any[];
+  issues: AnalysisIssue[];
+  recommendations: Recommendation[];
   createdAt: string;
   shareToken?: string;
 }

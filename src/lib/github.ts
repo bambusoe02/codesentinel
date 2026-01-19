@@ -24,7 +24,7 @@ export interface GitHubRepository {
 export interface GitHubFile {
   name: string;
   path: string;
-  type: 'file' | 'dir';
+  type: 'file' | 'dir' | 'submodule' | 'symlink';
   size: number;
   download_url: string | null;
   content?: string;
@@ -130,7 +130,14 @@ export class GitHubClient {
       // Handle both single file and directory responses
       const data = Array.isArray(response.data) ? response.data : [response.data];
 
-      return data.map((item: any) => ({
+      return data.map((item: {
+        name: string;
+        path: string;
+        type: 'file' | 'dir' | 'submodule' | 'symlink';
+        size: number;
+        download_url: string | null;
+        content?: string;
+      }) => ({
         name: item.name,
         path: item.path,
         type: item.type,
@@ -184,7 +191,13 @@ export class GitHubClient {
   }
 
   // Get repository contributors
-  async getRepositoryContributors(owner: string, repo: string): Promise<any[]> {
+  async getRepositoryContributors(owner: string, repo: string): Promise<Array<{
+    login: string;
+    id: number;
+    avatar_url: string;
+    html_url: string;
+    contributions: number;
+  }>> {
     try {
       const response = await this.octokit.repos.listContributors({
         owner,
@@ -192,7 +205,13 @@ export class GitHubClient {
         per_page: 100,
       });
 
-      return response.data;
+      return response.data as Array<{
+        login: string;
+        id: number;
+        avatar_url: string;
+        html_url: string;
+        contributions: number;
+      }>;
     } catch (error) {
       console.error('Error fetching contributors:', error);
       throw new Error('Failed to fetch repository contributors');

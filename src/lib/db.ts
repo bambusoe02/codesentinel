@@ -20,12 +20,29 @@ interface Repository {
   topics: string[];
 }
 
+interface AnalysisIssue {
+  id: string;
+  type: 'security' | 'performance' | 'maintainability' | 'reliability';
+  severity: 'low' | 'medium' | 'high' | 'critical';
+  title: string;
+  description?: string;
+}
+
+interface Recommendation {
+  id: string;
+  type: 'immediate' | 'short-term' | 'long-term';
+  title: string;
+  description: string;
+  priority: number;
+  impact: string;
+}
+
 interface AnalysisReport {
   id: string;
   repositoryId: string;
   overallScore: number;
-  issues: any[];
-  recommendations: any[];
+  issues: AnalysisIssue[];
+  recommendations: Recommendation[];
   createdAt: string;
   shareToken?: string;
 }
@@ -78,8 +95,8 @@ const mockReports: AnalysisReport[] = [
       { id: '2', type: 'performance', severity: 'low', title: 'Bundle size optimization' }
     ],
     recommendations: [
-      { id: '1', type: 'security', title: 'Update npm packages', priority: 8 },
-      { id: '2', type: 'performance', title: 'Implement code splitting', priority: 6 }
+      { id: '1', type: 'immediate', title: 'Update npm packages', description: 'Update outdated dependencies to fix security vulnerabilities', priority: 8, impact: 'Prevent security breaches and data loss' },
+      { id: '2', type: 'short-term', title: 'Implement code splitting', description: 'Split code into smaller chunks for better performance', priority: 6, impact: 'Improve loading times and user experience' }
     ],
     createdAt: '2024-01-15T10:00:00Z'
   }
@@ -97,7 +114,7 @@ export const db = {
 
   // Analysis reports operations
   insert: () => ({
-    values: (data: any) => ({
+    values: (data: Omit<AnalysisReport, 'id'>) => ({
       returning: () => [{ id: `report-${Date.now()}`, ...data }]
     })
   }),
