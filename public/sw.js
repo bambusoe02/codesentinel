@@ -1,5 +1,4 @@
 // Service Worker for CodeSentinel PWA
-const CACHE_NAME = 'codesentinel-v1.0.0';
 const STATIC_CACHE = 'codesentinel-static-v1.0.0';
 const API_CACHE = 'codesentinel-api-v1.0.0';
 
@@ -9,12 +8,6 @@ const STATIC_FILES = [
   '/manifest.json',
   '/icon-192x192.png',
   '/icon-512x512.png',
-];
-
-// API endpoints to cache
-const API_ENDPOINTS = [
-  '/api/repositories',
-  '/api/analysis',
 ];
 
 // Install event - cache static assets

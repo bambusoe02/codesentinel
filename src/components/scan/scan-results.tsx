@@ -243,7 +243,7 @@ export function ScanResults({ repoName }: ScanResultsProps) {
         </TabsContent>
 
         <TabsContent value="trends">
-          <TrendsChart repoName={repoName} />
+          <TrendsChart />
         </TabsContent>
       </Tabs>
 

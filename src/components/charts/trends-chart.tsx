@@ -7,7 +7,6 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
-  Legend,
   ResponsiveContainer,
   AreaChart,
   Area,
@@ -16,9 +15,7 @@ import {
 } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Badge } from '@/components/ui/badge';
 import {
-  TrendingUp,
   GitBranch,
   Users,
   Code,
@@ -71,11 +68,9 @@ const contributorData = [
   { week: 'Week 12', contributors: 12, newContributors: 0 },
 ];
 
-interface TrendsChartProps {
-  repoName: string;
-}
+interface TrendsChartProps {}
 
-export function TrendsChart({ repoName }: TrendsChartProps) {
+export function TrendsChart({}: TrendsChartProps) {
   const formatDate = (dateStr: string) => {
     return new Date(dateStr).toLocaleDateString('en-US', {
       month: 'short',

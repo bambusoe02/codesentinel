@@ -309,7 +309,32 @@ export class GitHubClient {
       const response = await this.graphqlClient(query, {
         owner,
         repo,
-      }) as any;
+      }) as {
+        repository: {
+          name: string;
+          description: string;
+          stargazers: { totalCount: number };
+          forks: { totalCount: number };
+          issues: { totalCount: number };
+          pullRequests: { totalCount: number };
+          defaultBranchRef?: {
+            target: {
+              history: {
+                edges: Array<{
+                  node: {
+                    committedDate: string;
+                    author: {
+                      user: {
+                        login: string;
+                      };
+                    };
+                  };
+                }>;
+              };
+            };
+          };
+        };
+      };
 
       return response.repository;
     } catch (error) {

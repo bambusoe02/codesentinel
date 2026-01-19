@@ -47,14 +47,18 @@ const nextConfig: NextConfig = {
   ...(process.env.ANALYZE === 'true' && {
     webpack: (config: any) => {
       if (process.env.NODE_ENV === 'production') {
-        const { BundleAnalyzerPlugin } = require('webpack-bundle-analyzer');
-        config.plugins.push(
-          new BundleAnalyzerPlugin({
-            analyzerMode: 'static',
-            openAnalyzer: false,
-            reportFilename: './analyze/client.html',
-          })
-        );
+        try {
+          const { BundleAnalyzerPlugin } = require('webpack-bundle-analyzer');
+          config.plugins.push(
+            new BundleAnalyzerPlugin({
+              analyzerMode: 'static',
+              openAnalyzer: false,
+              reportFilename: './analyze/client.html',
+            })
+          );
+        } catch (error) {
+          console.warn('Bundle analyzer not available:', error);
+        }
       }
       return config;
     },

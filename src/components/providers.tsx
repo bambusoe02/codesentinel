@@ -11,10 +11,13 @@ export function Providers({ children }: { children: React.ReactNode }) {
           queries: {
             staleTime: 60 * 1000, // 1 minute
             gcTime: 10 * 60 * 1000, // 10 minutes
-            retry: (failureCount, error: any) => {
+            retry: (failureCount, error: unknown) => {
               // Don't retry on 4xx errors
-              if (error?.status >= 400 && error?.status < 500) {
-                return false;
+              if (error && typeof error === 'object' && 'status' in error) {
+                const status = (error as { status: number }).status;
+                if (status >= 400 && status < 500) {
+                  return false;
+                }
               }
               return failureCount < 3;
             },

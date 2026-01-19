@@ -16,7 +16,17 @@ interface UIState {
 
   // Search states
   searchQuery: string;
-  searchResults: any[];
+  searchResults: Array<{
+    id: string;
+    name: string;
+    full_name: string;
+    description: string;
+    html_url: string;
+    owner: {
+      login: string;
+      avatar_url: string;
+    };
+  }>;
 
   // Actions
   setConnectGitHubModal: (open: boolean) => void;
@@ -27,7 +37,17 @@ interface UIState {
   setScanningProgress: (progress: number) => void;
   setScanningMessage: (message: string) => void;
   setSearchQuery: (query: string) => void;
-  setSearchResults: (results: any[]) => void;
+  setSearchResults: (results: Array<{
+    id: string;
+    name: string;
+    full_name: string;
+    description: string;
+    html_url: string;
+    owner: {
+      login: string;
+      avatar_url: string;
+    };
+  }>) => void;
 }
 
 export const useUIStore = create<UIState>((set) => ({
