@@ -2,11 +2,18 @@ import { neon } from '@neondatabase/serverless';
 import { drizzle } from 'drizzle-orm/neon-http';
 import * as schema from './schema';
 
-if (!process.env.DATABASE_URL) {
-  throw new Error('DATABASE_URL is not set');
+let databaseInstance: any = null;
+
+try {
+  if (process.env.DATABASE_URL) {
+    const sql = neon(process.env.DATABASE_URL);
+    databaseInstance = drizzle(sql, { schema });
+  } else if (process.env.NODE_ENV === 'development') {
+    console.log('⚠️  DATABASE_URL not set. Running in demo mode without database.');
+  }
+} catch (error) {
+  console.warn('Database connection failed, running in demo mode:', error);
 }
 
-const sql = neon(process.env.DATABASE_URL);
-export const db = drizzle(sql, { schema });
-
-export type DB = typeof db;
+export const db = databaseInstance;
+export type DB = typeof databaseInstance;

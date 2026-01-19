@@ -11,10 +11,12 @@ import {
   Code,
   Shield,
   TrendingUp,
+  AlertCircle,
 } from 'lucide-react';
 
 interface ScanProgressProps {
   repoName: string;
+  onComplete?: () => void;
 }
 
 const scanSteps = [
@@ -22,58 +24,112 @@ const scanSteps = [
     id: 'fetch',
     label: 'Fetching repository data',
     icon: Github,
-    duration: 2000,
   },
   {
     id: 'analyze',
     label: 'Analyzing code structure',
     icon: Code,
-    duration: 3000,
   },
   {
     id: 'security',
     label: 'Security assessment',
     icon: Shield,
-    duration: 2500,
   },
   {
     id: 'metrics',
     label: 'Calculating metrics',
     icon: TrendingUp,
-    duration: 1500,
   },
 ];
 
-export function ScanProgress({ repoName }: ScanProgressProps) {
+export function ScanProgress({ repoName, onComplete }: ScanProgressProps) {
   const [currentStep, setCurrentStep] = useState(0);
   const [progress, setProgress] = useState(0);
   const [isComplete, setIsComplete] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const runScan = async () => {
-      for (let i = 0; i < scanSteps.length; i++) {
-        setCurrentStep(i);
-        const step = scanSteps[i];
+      try {
+        setProgress(10);
+        setCurrentStep(0);
+        
+        // Start analysis
+        const response = await fetch(`/api/repositories/${encodeURIComponent(repoName)}/analyze`, {
+          method: 'POST',
+        });
 
-        // Animate progress for this step
-        const stepProgress = 100 / scanSteps.length;
-        const startProgress = i * stepProgress;
-
-        for (let p = 0; p <= stepProgress; p += 2) {
-          setProgress(startProgress + p);
-          await new Promise(resolve => setTimeout(resolve, step.duration / (stepProgress / 2)));
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'Failed to start analysis');
         }
 
-        // Wait a bit before next step
-        await new Promise(resolve => setTimeout(resolve, 500));
-      }
+        // Simulate progress during analysis
+        const steps = scanSteps.length;
+        for (let i = 0; i < steps; i++) {
+          setCurrentStep(i);
+          const stepProgress = ((i + 1) / steps) * 90; // Reserve 10% for completion
+          setProgress(stepProgress);
+          
+          // Wait a bit between steps
+          await new Promise(resolve => setTimeout(resolve, 1000));
+        }
 
-      setIsComplete(true);
-      setProgress(100);
+        setProgress(100);
+        setCurrentStep(steps);
+        setIsComplete(true);
+        
+        if (onComplete) {
+          onComplete();
+        }
+      } catch (err) {
+        console.error('Scan error:', err);
+        setError(err instanceof Error ? err.message : 'Unknown error occurred');
+        setIsComplete(true);
+      }
     };
 
-    runScan();
-  }, [repoName]);
+    // Check if analysis already exists
+    const checkExisting = async () => {
+      try {
+        const response = await fetch(`/api/repositories/${encodeURIComponent(repoName)}/results`);
+        if (response.ok) {
+          setIsComplete(true);
+          setProgress(100);
+          if (onComplete) {
+            onComplete();
+          }
+          return;
+        }
+      } catch {
+        // No existing analysis, start new one
+      }
+      
+      runScan();
+    };
+
+    checkExisting();
+  }, [repoName, onComplete]);
+
+  if (error) {
+    return (
+      <Card className="border-red-200 dark:border-red-800">
+        <CardContent className="p-6">
+          <div className="flex items-center space-x-3">
+            <AlertCircle className="w-6 h-6 text-red-600" />
+            <div>
+              <h3 className="font-semibold text-red-900 dark:text-red-100">
+                Analysis Failed
+              </h3>
+              <p className="text-sm text-red-700 dark:text-red-300">
+                {error}
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   if (isComplete) {
     return (

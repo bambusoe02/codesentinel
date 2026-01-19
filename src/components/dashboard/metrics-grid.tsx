@@ -1,51 +1,89 @@
 'use client';
 
+import { useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton';
 import {
   Github,
   Code,
   FileText,
   AlertTriangle,
 } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
 
-// Mock data - in real app this would come from API
-const metrics = [
-  {
-    title: 'Total Repositories',
-    value: '24',
-    change: '+3',
-    changeType: 'positive' as const,
-    icon: Github,
-    description: 'Connected repositories',
-  },
-  {
-    title: 'Lines of Code',
-    value: '1.2M',
-    change: '+12%',
-    changeType: 'positive' as const,
-    icon: Code,
-    description: 'Across all repositories',
-  },
-  {
-    title: 'Active Analyses',
-    value: '8',
-    change: '+2',
-    changeType: 'positive' as const,
-    icon: FileText,
-    description: 'Currently processing',
-  },
-  {
-    title: 'Issues Found',
-    value: '156',
-    change: '-23',
-    changeType: 'negative' as const,
-    icon: AlertTriangle,
-    description: 'Resolved this month',
-  },
-];
+async function fetchRepositories() {
+  const response = await fetch('/api/repositories');
+  if (!response.ok) {
+    throw new Error('Failed to fetch repositories');
+  }
+  const data = await response.json();
+  return data.repositories || [];
+}
 
 export function MetricsGrid() {
+  const { data: repositories = [], isLoading } = useQuery({
+    queryKey: ['repositories'],
+    queryFn: fetchRepositories,
+  });
+
+  const metrics = useMemo(() => {
+    const totalRepos = repositories.length;
+    const totalStars = repositories.reduce((sum: number, repo: any) => sum + (repo.stargazersCount || 0), 0);
+    
+    return [
+      {
+        title: 'Total Repositories',
+        value: totalRepos.toString(),
+        change: '',
+        changeType: 'neutral' as const,
+        icon: Github,
+        description: 'Connected repositories',
+      },
+      {
+        title: 'Total Stars',
+        value: totalStars.toLocaleString(),
+        change: '',
+        changeType: 'neutral' as const,
+        icon: Code,
+        description: 'Across all repositories',
+      },
+      {
+        title: 'Repositories',
+        value: totalRepos.toString(),
+        change: '',
+        changeType: 'neutral' as const,
+        icon: FileText,
+        description: 'Available for analysis',
+      },
+      {
+        title: 'Ready to Analyze',
+        value: totalRepos.toString(),
+        change: '',
+        changeType: 'neutral' as const,
+        icon: AlertTriangle,
+        description: 'Click analyze to start',
+      },
+    ];
+  }, [repositories]);
+
+  if (isLoading) {
+    return (
+      <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
+        {[1, 2, 3, 4].map((i) => (
+          <Card key={i}>
+            <CardHeader>
+              <Skeleton className="h-4 w-24" />
+            </CardHeader>
+            <CardContent>
+              <Skeleton className="h-8 w-16 mb-2" />
+              <Skeleton className="h-3 w-32" />
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    );
+  }
   return (
     <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
       {metrics.map((metric) => {
@@ -61,18 +99,14 @@ export function MetricsGrid() {
             <CardContent>
               <div className="text-2xl font-bold">{metric.value}</div>
               <div className="flex items-center space-x-2 text-xs text-muted-foreground">
-                <Badge
-                  variant={
-                    metric.changeType === 'positive'
-                      ? 'default'
-                      : metric.changeType === 'negative'
-                      ? 'destructive'
-                      : 'secondary'
-                  }
-                  className="text-xs"
-                >
-                  {metric.change}
-                </Badge>
+                {metric.change && (
+                  <Badge
+                    variant="secondary"
+                    className="text-xs"
+                  >
+                    {metric.change}
+                  </Badge>
+                )}
                 <span>{metric.description}</span>
               </div>
             </CardContent>

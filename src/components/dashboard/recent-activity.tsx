@@ -1,64 +1,64 @@
 'use client';
 
+import { useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
 import {
   CheckCircle,
   AlertTriangle,
-  Clock,
-  Github,
   FileText,
 } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import { formatDistanceToNow } from 'date-fns';
 
-// Mock data - in real app this would come from API
-const activities = [
-  {
-    id: '1',
-    type: 'analysis_completed',
-    title: 'Analysis completed for react-app',
-    description: 'Found 8 issues, score: 85/100',
-    time: '2 hours ago',
-    icon: CheckCircle,
-    color: 'text-green-600',
-  },
-  {
-    id: '2',
-    type: 'repository_connected',
-    title: 'Connected new repository',
-    description: 'data-pipeline added to monitoring',
-    time: '1 day ago',
-    icon: Github,
-    color: 'text-blue-600',
-  },
-  {
-    id: '3',
-    type: 'issues_found',
-    title: 'Security issues detected',
-    description: '3 high-priority vulnerabilities in api-server',
-    time: '1 day ago',
-    icon: AlertTriangle,
-    color: 'text-red-600',
-  },
-  {
-    id: '4',
-    type: 'analysis_started',
-    title: 'Analysis started',
-    description: 'Scanning mobile-app repository',
-    time: '3 days ago',
-    icon: Clock,
-    color: 'text-yellow-600',
-  },
-  {
-    id: '5',
-    type: 'report_generated',
-    title: 'PDF report generated',
-    description: 'Monthly summary report ready',
-    time: '1 week ago',
-    icon: FileText,
-    color: 'text-purple-600',
-  },
-];
+async function fetchRecentActivity() {
+  const response = await fetch('/api/analysis/recent');
+  if (!response.ok) {
+    throw new Error('Failed to fetch recent activity');
+  }
+  const data = await response.json();
+  return data.activities || [];
+}
 
 export function RecentActivity() {
+  const { data: activities = [], isLoading } = useQuery({
+    queryKey: ['recent-activity'],
+    queryFn: fetchRecentActivity,
+  });
+
+  const formattedActivities = useMemo(() => {
+    return activities.map((activity: any) => {
+      const issuesCount = Array.isArray(activity.issues) ? activity.issues.length : 0;
+      const hasIssues = issuesCount > 0;
+      
+      return {
+        id: activity.id,
+        title: `Analysis completed for ${activity.repositoryName}`,
+        description: `Score: ${activity.overallScore}/100${issuesCount > 0 ? `, ${issuesCount} issue${issuesCount !== 1 ? 's' : ''} found` : ''}`,
+        time: formatDistanceToNow(new Date(activity.createdAt), { addSuffix: true }),
+        icon: hasIssues ? AlertTriangle : CheckCircle,
+        color: hasIssues ? 'text-yellow-600' : 'text-green-600',
+      };
+    });
+  }, [activities]);
+
+  if (isLoading) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Recent Activity</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            {[1, 2, 3].map((i) => (
+              <Skeleton key={i} className="h-16 w-full" />
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <Card>
       <CardHeader>
@@ -66,7 +66,7 @@ export function RecentActivity() {
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
-          {activities.map((activity) => {
+          {formattedActivities.map((activity: { id: string; title: string; description: string; time: string; icon: any; color: string }) => {
             const Icon = activity.icon;
             return (
               <div key={activity.id} className="flex items-start space-x-3">
@@ -86,9 +86,9 @@ export function RecentActivity() {
             );
           })}
         </div>
-        {activities.length === 0 && (
+        {formattedActivities.length === 0 && (
           <div className="text-center py-8">
-            <Clock className="w-8 h-8 mx-auto text-muted-foreground mb-2" />
+            <FileText className="w-8 h-8 mx-auto text-muted-foreground mb-2" />
             <p className="text-sm text-muted-foreground">
               No recent activity
             </p>

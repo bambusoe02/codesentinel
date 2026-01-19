@@ -1,31 +1,9 @@
+'use client';
+
+import { useState, useEffect } from 'react';
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import dynamic from "next/dynamic";
-
-// Check if Clerk is available on server
-let isClerkAvailable = false;
-try {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  require('@clerk/nextjs');
-  const hasPublishableKey = !!process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
-  const hasSecretKey = !!process.env.CLERK_SECRET_KEY;
-  isClerkAvailable = hasPublishableKey && hasSecretKey;
-} catch {
-  isClerkAvailable = false;
-}
-
-// Conditionally load Clerk components
-const SignedIn = isClerkAvailable
-  ? dynamic(() => import("@clerk/nextjs").then(mod => ({ default: mod.SignedIn })))
-  : ({ children }: { children: React.ReactNode }) => <>{children}</>;
-
-const SignedOut = isClerkAvailable
-  ? dynamic(() => import("@clerk/nextjs").then(mod => ({ default: mod.SignedOut })))
-  : ({ children }: { children: React.ReactNode }) => <>{children}</>;
-
-const SignInButton = isClerkAvailable
-  ? dynamic(() => import("@clerk/nextjs").then(mod => ({ default: mod.SignInButton })))
-  : ({ children }: { children: React.ReactNode }) => <>{children}</>;
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -39,6 +17,44 @@ import {
   FileText,
   Share2
 } from "lucide-react";
+
+// Check if Clerk is available (client-side)
+const getClerkAvailable = () => {
+  if (typeof window === 'undefined') return false;
+  const key = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
+  return !!(key && key.trim() !== '' && key !== 'pk_test_...');
+};
+
+// Conditionally load Clerk components (client-side only)
+const SignedIn = dynamic(() => 
+  import("@clerk/nextjs").then(mod => ({ default: mod.SignedIn })), 
+  { ssr: false }
+);
+
+const SignedOut = dynamic(() => 
+  import("@clerk/nextjs").then(mod => ({ default: mod.SignedOut })), 
+  { ssr: false }
+);
+
+const SignInButton = dynamic(() => 
+  import("@clerk/nextjs").then(mod => ({ default: mod.SignInButton })), 
+  { ssr: false }
+);
+
+// Wrapper component to conditionally render Clerk components
+function ClerkWrapper({ children, fallback }: { children: React.ReactNode; fallback?: React.ReactNode }) {
+  const [isAvailable, setIsAvailable] = useState(false);
+
+  useEffect(() => {
+    setIsAvailable(getClerkAvailable());
+  }, []);
+
+  if (!isAvailable) {
+    return <>{fallback || null}</>;
+  }
+
+  return <>{children}</>;
+}
 
 export default function Home() {
   return (
@@ -55,16 +71,22 @@ export default function Home() {
             </span>
           </div>
           <div className="flex items-center space-x-4">
-            <SignedOut>
-              <SignInButton mode="modal">
-                <Button variant="ghost">Sign In</Button>
-              </SignInButton>
-            </SignedOut>
-            <SignedIn>
+            <ClerkWrapper fallback={
               <Link href="/dashboard">
                 <Button>Go to Dashboard</Button>
               </Link>
-            </SignedIn>
+            }>
+              <SignedOut>
+                <SignInButton mode="modal">
+                  <Button variant="ghost">Sign In</Button>
+                </SignInButton>
+              </SignedOut>
+              <SignedIn>
+                <Link href="/dashboard">
+                  <Button>Go to Dashboard</Button>
+                </Link>
+              </SignedIn>
+            </ClerkWrapper>
           </div>
         </div>
       </nav>
@@ -86,22 +108,31 @@ export default function Home() {
             before they impact your team.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-            <SignedOut>
-              <SignInButton mode="modal">
-                <Button size="lg" className="text-lg px-8 py-6">
-                  Start Free Analysis
-                  <ArrowRight className="ml-2 w-5 h-5" />
-                </Button>
-              </SignInButton>
-            </SignedOut>
-            <SignedIn>
+            <ClerkWrapper fallback={
               <Link href="/dashboard">
                 <Button size="lg" className="text-lg px-8 py-6">
                   Go to Dashboard
                   <ArrowRight className="ml-2 w-5 h-5" />
                 </Button>
               </Link>
-            </SignedIn>
+            }>
+              <SignedOut>
+                <SignInButton mode="modal">
+                  <Button size="lg" className="text-lg px-8 py-6">
+                    Start Free Analysis
+                    <ArrowRight className="ml-2 w-5 h-5" />
+                  </Button>
+                </SignInButton>
+              </SignedOut>
+              <SignedIn>
+                <Link href="/dashboard">
+                  <Button size="lg" className="text-lg px-8 py-6">
+                    Go to Dashboard
+                    <ArrowRight className="ml-2 w-5 h-5" />
+                  </Button>
+                </Link>
+              </SignedIn>
+            </ClerkWrapper>
             <Button variant="outline" size="lg" className="text-lg px-8 py-6">
               Watch Demo
             </Button>
@@ -256,22 +287,31 @@ export default function Home() {
             high-quality, secure, and performant codebases.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <SignedOut>
-              <SignInButton mode="modal">
-                <Button size="lg" className="text-lg px-8 py-6">
-                  Start Your First Analysis
-                  <Github className="ml-2 w-5 h-5" />
-                </Button>
-              </SignInButton>
-            </SignedOut>
-            <SignedIn>
+            <ClerkWrapper fallback={
               <Link href="/dashboard">
                 <Button size="lg" className="text-lg px-8 py-6">
                   Go to Dashboard
                   <ArrowRight className="ml-2 w-5 h-5" />
                 </Button>
               </Link>
-            </SignedIn>
+            }>
+              <SignedOut>
+                <SignInButton mode="modal">
+                  <Button size="lg" className="text-lg px-8 py-6">
+                    Start Your First Analysis
+                    <Github className="ml-2 w-5 h-5" />
+                  </Button>
+                </SignInButton>
+              </SignedOut>
+              <SignedIn>
+                <Link href="/dashboard">
+                  <Button size="lg" className="text-lg px-8 py-6">
+                    Go to Dashboard
+                    <ArrowRight className="ml-2 w-5 h-5" />
+                  </Button>
+                </Link>
+              </SignedIn>
+            </ClerkWrapper>
           </div>
           <p className="text-sm text-slate-500 mt-4">
             Interactive demo with sample data. Try the analysis features.

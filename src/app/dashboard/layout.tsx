@@ -32,6 +32,9 @@ export default async function DashboardLayout({
     if (!userId) {
       redirect('/');
     }
+
+    // Sync user with database (use relative URL for client-side fetch)
+    // Note: This will be handled client-side in a useEffect hook
   }
 
   return (

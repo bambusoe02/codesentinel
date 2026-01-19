@@ -3,6 +3,7 @@ import { RepositoryList } from '@/components/dashboard/repository-list';
 import { MetricsGrid } from '@/components/dashboard/metrics-grid';
 import { RecentActivity } from '@/components/dashboard/recent-activity';
 import { QuickActions } from '@/components/dashboard/quick-actions';
+import { UserSync } from '@/components/dashboard/user-sync';
 import { Skeleton } from '@/components/ui/skeleton';
 
 export const dynamic = 'force-dynamic';
@@ -13,6 +14,7 @@ export const generateStaticParams = undefined;
 export default function DashboardPage() {
   return (
     <div className="space-y-6">
+      <UserSync />
       {/* Welcome Section */}
       <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg p-6 text-white">
         <h1 className="text-2xl font-bold mb-2">Welcome back!</h1>

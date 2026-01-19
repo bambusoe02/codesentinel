@@ -1,9 +1,11 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Skeleton } from '@/components/ui/skeleton';
 import { CodeHighlights } from './code-highlights';
 import { TrendsChart } from '@/components/charts/trends-chart';
 import {
@@ -14,107 +16,153 @@ import {
   XCircle,
   Clock,
   FileText,
+  RefreshCw,
 } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
 
-// Mock analysis results - in real app this would come from AI analysis
-const analysisResults = {
-  overall: {
-    score: 78,
-    grade: 'B',
-    status: 'Good',
-  },
-  categories: [
+interface ScanResultsProps {
+  repoName: string;
+}
+
+async function fetchAnalysisResults(repoName: string) {
+  const response = await fetch(`/api/repositories/${encodeURIComponent(repoName)}/results`);
+  if (!response.ok) {
+    throw new Error('Failed to fetch analysis results');
+  }
+  const data = await response.json();
+  return data.report;
+}
+
+function getGrade(score: number): string {
+  if (score >= 90) return 'A';
+  if (score >= 80) return 'B';
+  if (score >= 70) return 'C';
+  if (score >= 60) return 'D';
+  return 'F';
+}
+
+function getStatus(score: number): string {
+  if (score >= 80) return 'Excellent';
+  if (score >= 70) return 'Good';
+  if (score >= 60) return 'Fair';
+  return 'Needs Improvement';
+}
+
+export function ScanResults({ repoName }: ScanResultsProps) {
+  const { data: report, isLoading, error, refetch } = useQuery({
+    queryKey: ['analysis-results', repoName],
+    queryFn: () => fetchAnalysisResults(repoName),
+    retry: false,
+    refetchInterval: (query) => {
+      // Poll every 5 seconds if no data yet
+      return query.state.data ? false : 5000;
+    },
+  });
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <Card>
+          <CardHeader>
+            <Skeleton className="h-6 w-48" />
+          </CardHeader>
+          <CardContent>
+            <Skeleton className="h-32 w-full" />
+          </CardContent>
+        </Card>
+        {[1, 2, 3].map((i) => (
+          <Card key={i}>
+            <CardHeader>
+              <Skeleton className="h-6 w-32" />
+            </CardHeader>
+            <CardContent>
+              <Skeleton className="h-24 w-full" />
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    );
+  }
+
+  if (error || !report) {
+    return (
+      <Card>
+        <CardContent className="p-6">
+          <div className="text-center py-8">
+            <AlertTriangle className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
+            <h3 className="text-lg font-medium mb-2">No analysis results found</h3>
+            <p className="text-muted-foreground mb-4">
+              Start an analysis to see results here.
+            </p>
+            <button
+              onClick={() => refetch()}
+              className="inline-flex items-center px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
+            >
+              <RefreshCw className="w-4 h-4 mr-2" />
+              Refresh
+            </button>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  const overallScore = report.overallScore || 0;
+  const issues = report.issues || [];
+  const recommendations = report.recommendations || [];
+
+  // Group issues by type
+  const issuesByType = {
+    security: issues.filter((i: any) => i.type === 'security'),
+    performance: issues.filter((i: any) => i.type === 'performance'),
+    maintainability: issues.filter((i: any) => i.type === 'maintainability'),
+    reliability: issues.filter((i: any) => i.type === 'reliability'),
+  };
+
+  const categories = [
     {
       id: 'security',
       title: 'Security',
-      score: 85,
+      score: 85, // TODO: Calculate from issues
       grade: 'A',
-      issuesCount: 2,
+      issuesCount: issuesByType.security.length,
       icon: Shield,
       color: 'text-green-600',
       bgColor: 'bg-green-50 dark:bg-green-900/20',
       borderColor: 'border-green-200 dark:border-green-800',
-      issues: [
-        {
-          severity: 'high',
-          title: 'Exposed API keys in configuration',
-          description: 'Found hardcoded API keys in config files',
-          file: 'config/production.js',
-          line: 15,
-          fix: 'Move sensitive data to environment variables',
-        },
-        {
-          severity: 'medium',
-          title: 'Outdated dependencies',
-          description: 'Several packages have known vulnerabilities',
-          file: 'package.json',
-          line: null,
-          fix: 'Update to latest secure versions',
-        },
-      ],
+      issues: issuesByType.security.slice(0, 5),
     },
     {
       id: 'performance',
       title: 'Performance',
-      score: 72,
+      score: 72, // TODO: Calculate from issues
       grade: 'B',
-      issuesCount: 5,
+      issuesCount: issuesByType.performance.length,
       icon: TrendingUp,
       color: 'text-yellow-600',
       bgColor: 'bg-yellow-50 dark:bg-yellow-900/20',
       borderColor: 'border-yellow-200 dark:border-yellow-800',
-      issues: [
-        {
-          severity: 'medium',
-          title: 'Large bundle size',
-          description: 'Main bundle exceeds recommended size limit',
-          file: 'build/static/js/main.js',
-          line: null,
-          fix: 'Implement code splitting and lazy loading',
-        },
-      ],
+      issues: issuesByType.performance.slice(0, 5),
     },
     {
       id: 'maintainability',
       title: 'Maintainability',
-      score: 65,
+      score: 65, // TODO: Calculate from issues
       grade: 'C',
-      issuesCount: 12,
+      issuesCount: issuesByType.maintainability.length,
       icon: Code,
       color: 'text-red-600',
       bgColor: 'bg-red-50 dark:bg-red-900/20',
       borderColor: 'border-red-200 dark:border-red-800',
-      issues: [
-        {
-          severity: 'low',
-          title: 'Code duplication',
-          description: 'Similar code patterns repeated across files',
-          file: 'src/components/',
-          line: null,
-          fix: 'Extract common functionality into reusable components',
-        },
-      ],
+      issues: issuesByType.maintainability.slice(0, 5),
     },
-  ],
-  repository: {
-    linesOfCode: 15420,
-    filesCount: 247,
-    languages: {
-      TypeScript: 65,
-      JavaScript: 25,
-      JSON: 8,
-      Other: 2,
-    },
-    contributors: 8,
-    lastCommit: '2 hours ago',
-    branches: 12,
-    stars: 45,
-    forks: 12,
-  },
-};
+  ];
 
-export function ScanResults() {
-  const { overall, categories, repository } = analysisResults;
+  const overall = {
+    score: overallScore,
+    grade: getGrade(overallScore),
+    status: getStatus(overallScore),
+  };
 
   return (
     <div className="space-y-6">
@@ -181,7 +229,7 @@ export function ScanResults() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {category.issues.map((issue, index) => (
+                  {category.issues.map((issue: any, index: number) => (
                     <div key={index} className="border rounded-lg p-4">
                       <div className="flex items-start justify-between mb-2">
                         <div className="flex items-center space-x-2">
@@ -246,37 +294,20 @@ export function ScanResults() {
         <CardContent>
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
             <div className="text-center">
-              <div className="text-2xl font-bold">{repository.linesOfCode.toLocaleString()}</div>
-              <div className="text-sm text-muted-foreground">Lines of Code</div>
+              <div className="text-2xl font-bold">{issues.length}</div>
+              <div className="text-sm text-muted-foreground">Issues Found</div>
             </div>
             <div className="text-center">
-              <div className="text-2xl font-bold">{repository.filesCount}</div>
-              <div className="text-sm text-muted-foreground">Files</div>
+              <div className="text-2xl font-bold">{recommendations.length}</div>
+              <div className="text-sm text-muted-foreground">Recommendations</div>
             </div>
             <div className="text-center">
-              <div className="text-2xl font-bold">{repository.contributors}</div>
-              <div className="text-sm text-muted-foreground">Contributors</div>
+              <div className="text-2xl font-bold">{overall.score}/100</div>
+              <div className="text-sm text-muted-foreground">Overall Score</div>
             </div>
             <div className="text-center">
-              <div className="text-2xl font-bold">{repository.branches}</div>
-              <div className="text-sm text-muted-foreground">Branches</div>
-            </div>
-          </div>
-
-          <div className="mt-6 pt-6 border-t">
-            <h4 className="font-medium mb-4">Language Breakdown</h4>
-            <div className="space-y-2">
-              {Object.entries(repository.languages).map(([lang, percentage]) => (
-                <div key={lang} className="flex items-center justify-between">
-                  <span className="text-sm">{lang}</span>
-                  <div className="flex items-center space-x-2 flex-1 mx-4">
-                    <Progress value={percentage} className="flex-1" />
-                    <span className="text-sm text-muted-foreground w-12">
-                      {percentage}%
-                    </span>
-                  </div>
-                </div>
-              ))}
+              <div className="text-2xl font-bold">{overall.grade}</div>
+              <div className="text-sm text-muted-foreground">Grade</div>
             </div>
           </div>
         </CardContent>
@@ -284,3 +315,4 @@ export function ScanResults() {
     </div>
   );
 }
+
