@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from 'next'
 import { Geist, Geist_Mono } from "next/font/google";
 import { ClerkProviderWrapper } from "@/components/clerk-provider-wrapper";
 import { Toaster } from "@/components/ui/sonner";
@@ -41,10 +41,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "CodeSentinel - AI GitHub Repository Analyzer",
-  description: "Professional AI-powered GitHub repository analysis for engineering managers. Analyze code quality, security risks, and performance issues.",
-  keywords: ["GitHub", "code analysis", "AI", "repository analyzer", "tech debt", "security", "performance"],
-  authors: [{ name: "CodeSentinel Team" }],
+  title: 'CodeSentinel - AI GitHub Analyzer',
+  description: 'Enterprise-grade repo analysis platform',
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
@@ -55,21 +53,27 @@ export const metadata: Metadata = {
     type: "website",
     locale: "en_US",
     url: "https://codesentinel-six.vercel.app",
-    title: "CodeSentinel - AI GitHub Repository Analyzer",
-    description: "Professional AI-powered GitHub repository analysis for engineering managers",
+    title: "CodeSentinel - AI GitHub Analyzer",
+    description: "Enterprise-grade repo analysis platform",
     siteName: "CodeSentinel",
   },
   twitter: {
     card: "summary_large_image",
-    title: "CodeSentinel - AI GitHub Repository Analyzer",
-    description: "Professional AI-powered GitHub repository analysis for engineering managers",
+    title: "CodeSentinel - AI GitHub Analyzer",
+    description: "Enterprise-grade repo analysis platform",
     creator: "@codesentinel",
   },
 };
 
-export const viewport = {
-  width: "device-width",
+export const viewport: Viewport = {
+  themeColor: [
+    { media: '(prefers-color-scheme: light)', color: '#ffffff' },
+    { media: '(prefers-color-scheme: dark)', color: '#0a0a0a' },
+  ],
+  width: 'device-width',
   initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
 };
 
 export default function RootLayout({
