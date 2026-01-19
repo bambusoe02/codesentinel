@@ -2,16 +2,25 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import dynamic from "next/dynamic";
 
+// Check if Clerk is available on server
+let isClerkAvailable = false;
+try {
+  require('@clerk/nextjs');
+  isClerkAvailable = !!(process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY && process.env.CLERK_SECRET_KEY);
+} catch (error) {
+  isClerkAvailable = false;
+}
+
 // Conditionally load Clerk components
-const SignedIn = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY
+const SignedIn = isClerkAvailable
   ? dynamic(() => import("@clerk/nextjs").then(mod => ({ default: mod.SignedIn })))
   : ({ children }: { children: React.ReactNode }) => <>{children}</>;
 
-const SignedOut = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY
+const SignedOut = isClerkAvailable
   ? dynamic(() => import("@clerk/nextjs").then(mod => ({ default: mod.SignedOut })))
   : ({ children }: { children: React.ReactNode }) => <>{children}</>;
 
-const SignInButton = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY
+const SignInButton = isClerkAvailable
   ? dynamic(() => import("@clerk/nextjs").then(mod => ({ default: mod.SignInButton })))
   : ({ children }: { children: React.ReactNode }) => <>{children}</>;
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";

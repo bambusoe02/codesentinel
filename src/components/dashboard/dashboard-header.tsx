@@ -13,8 +13,17 @@ import {
 import { useUIStore } from '@/lib/stores/ui-store';
 import dynamic from 'next/dynamic';
 
+// Check if Clerk is available
+let isClerkAvailable = false;
+try {
+  require('@clerk/nextjs');
+  isClerkAvailable = !!(process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY && process.env.CLERK_SECRET_KEY);
+} catch (error) {
+  isClerkAvailable = false;
+}
+
 // Conditionally load UserButton only if Clerk is configured
-const UserButtonComponent = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY
+const UserButtonComponent = isClerkAvailable
   ? dynamic(() => import('@clerk/nextjs').then(mod => ({ default: mod.UserButton })), {
       ssr: false,
       loading: () => <div className="w-8 h-8 bg-gray-200 rounded-full animate-pulse" />
