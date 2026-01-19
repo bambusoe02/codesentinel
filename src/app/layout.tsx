@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import { ClerkProviderWrapper } from "@/components/clerk-provider-wrapper";
 import { Toaster } from "@/components/ui/sonner";
 import { ThemeProvider } from "@/components/theme-provider";
@@ -67,6 +68,7 @@ export default function RootLayout({
               {children}
               <Toaster />
               <PWAInstall />
+              <SpeedInsights />
             </Providers>
           </ThemeProvider>
         </body>
