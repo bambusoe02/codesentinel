@@ -20,7 +20,7 @@ interface ScanHeaderProps {
 }
 
 export function ScanHeader({ repoName }: ScanHeaderProps) {
-  const [owner, name] = repoName.split('/');
+  const [, name] = repoName.split('/');
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const { exportReport, isExporting } = usePDFExport();
 

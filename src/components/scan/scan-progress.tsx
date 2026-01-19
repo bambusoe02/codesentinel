@@ -7,7 +7,6 @@ import { Badge } from '@/components/ui/badge';
 import {
   CheckCircle,
   Clock,
-  AlertCircle,
   Github,
   Code,
   Shield,

@@ -1,6 +1,6 @@
 'use client';
 
-import { UserButton, useUser } from '@clerk/nextjs';
+import { UserButton } from '@clerk/nextjs';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -13,7 +13,6 @@ import {
 import { useUIStore } from '@/lib/stores/ui-store';
 
 export function DashboardHeader() {
-  const { user } = useUser();
   const { setSearchQuery } = useUIStore();
 
   return (

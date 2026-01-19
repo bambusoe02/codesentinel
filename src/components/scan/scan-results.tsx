@@ -3,7 +3,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { CodeHighlights } from './code-highlights';
 import { TrendsChart } from '@/components/charts/trends-chart';
@@ -12,13 +11,9 @@ import {
   Shield,
   TrendingUp,
   Code,
-  CheckCircle,
   XCircle,
   Clock,
   FileText,
-  GitBranch,
-  Users,
-  Star,
 } from 'lucide-react';
 
 // Mock analysis results - in real app this would come from AI analysis
@@ -118,11 +113,7 @@ const analysisResults = {
   },
 };
 
-interface ScanResultsProps {
-  repoName: string;
-}
-
-export function ScanResults({ repoName }: ScanResultsProps) {
+export function ScanResults() {
   const { overall, categories, repository } = analysisResults;
 
   return (

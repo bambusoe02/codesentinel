@@ -29,7 +29,7 @@ export default function ScanPage({ params }: ScanPageProps) {
         </Suspense>
 
         <Suspense fallback={<ScanResultsSkeleton />}>
-          <ScanResults repoName={repoName} />
+          <ScanResults />
         </Suspense>
       </div>
     </div>

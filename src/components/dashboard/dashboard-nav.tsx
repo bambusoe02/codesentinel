@@ -10,7 +10,6 @@ import {
   Home,
   Search,
   Settings,
-  TrendingUp,
   FileText,
 } from 'lucide-react';
 

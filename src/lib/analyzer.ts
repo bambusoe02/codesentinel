@@ -162,7 +162,7 @@ export class CodeAnalyzer {
         });
       }
 
-    } catch (error) {
+    } catch {
       issues.push({
         id: 'invalid-package-json',
         type: 'reliability',
@@ -237,7 +237,6 @@ export class CodeAnalyzer {
 
     sourceFiles.forEach(file => {
       if (file.content) {
-        const lines = file.content.split('\n');
         const content = file.content;
 
         // Check for console.log statements
@@ -407,7 +406,6 @@ export class CodeAnalyzer {
 
     // Group issues by type and severity
     const criticalIssues = issues.filter(i => i.severity === 'critical');
-    const highIssues = issues.filter(i => i.severity === 'high');
     const securityIssues = issues.filter(i => i.type === 'security');
 
     if (criticalIssues.length > 0) {

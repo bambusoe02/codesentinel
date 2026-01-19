@@ -367,7 +367,7 @@ Key Findings:
   }
 
   // Alternative method using html2canvas for more complex layouts
-  async generateReportFromHTML(elementId: string, data: PDFReportData): Promise<Blob> {
+  async generateReportFromHTML(elementId: string): Promise<Blob> {
     const element = document.getElementById(elementId);
     if (!element) {
       throw new Error('Element not found');

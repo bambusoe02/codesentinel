@@ -8,8 +8,6 @@ import {
   Plus,
   FileText,
   Search,
-  TrendingUp,
-  Zap,
 } from 'lucide-react';
 
 export function QuickActions() {

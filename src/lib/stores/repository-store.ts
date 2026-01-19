@@ -21,7 +21,7 @@ interface RepositoryState {
   clearError: () => void;
 }
 
-export const useRepositoryStore = create<RepositoryState>((set, get) => ({
+export const useRepositoryStore = create<RepositoryState>((set) => ({
   repositories: [],
   selectedRepository: null,
   analysisReports: [],

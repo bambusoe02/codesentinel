@@ -6,9 +6,7 @@ import {
   Github,
   Code,
   FileText,
-  TrendingUp,
   AlertTriangle,
-  CheckCircle,
 } from 'lucide-react';
 
 // Mock data - in real app this would come from API

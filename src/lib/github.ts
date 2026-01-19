@@ -84,7 +84,7 @@ export class GitHubClient {
   }
 
   // Get user repositories
-  async getUserRepositories(username?: string): Promise<GitHubRepository[]> {
+  async getUserRepositories(): Promise<GitHubRepository[]> {
     try {
       const response = await this.octokit.repos.listForAuthenticatedUser({
         sort: 'updated',
@@ -176,7 +176,7 @@ export class GitHubClient {
         repo,
       });
 
-      return response.data;
+      return response.data as GitHubLanguageStats;
     } catch (error) {
       console.error('Error fetching languages:', error);
       throw new Error('Failed to fetch repository languages');

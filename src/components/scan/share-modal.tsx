@@ -12,9 +12,7 @@ import {
   Share2,
   Link,
   Mail,
-  MessageSquare,
   Twitter,
-  Facebook,
   Linkedin,
 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -23,10 +21,9 @@ interface ShareModalProps {
   isOpen: boolean;
   onClose: () => void;
   repoName: string;
-  reportId?: string;
 }
 
-export function ShareModal({ isOpen, onClose, repoName, reportId }: ShareModalProps) {
+export function ShareModal({ isOpen, onClose, repoName }: ShareModalProps) {
   const [shareLink, setShareLink] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
 

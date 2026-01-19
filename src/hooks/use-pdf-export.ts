@@ -27,7 +27,7 @@ export function usePDFExport() {
     setIsExporting(true);
     try {
       const generator = new PDFGenerator();
-      const blob = await generator.generateReportFromHTML(elementId, data);
+      const blob = await generator.generateReportFromHTML(elementId);
 
       const filename = generateReportFilename(data.repoName);
       downloadPDF(blob, filename);

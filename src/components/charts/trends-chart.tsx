@@ -68,9 +68,7 @@ const contributorData = [
   { week: 'Week 12', contributors: 12, newContributors: 0 },
 ];
 
-interface TrendsChartProps {}
-
-export function TrendsChart({}: TrendsChartProps) {
+export function TrendsChart() {
   const formatDate = (dateStr: string) => {
     return new Date(dateStr).toLocaleDateString('en-US', {
       month: 'short',
