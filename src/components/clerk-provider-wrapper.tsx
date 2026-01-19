@@ -1,5 +1,7 @@
 'use client';
 
+import dynamic from 'next/dynamic';
+
 interface ClerkProviderWrapperProps {
   children: React.ReactNode;
   isClerkAvailable: boolean;
@@ -8,14 +10,15 @@ interface ClerkProviderWrapperProps {
 export function ClerkProviderWrapper({ children, isClerkAvailable }: ClerkProviderWrapperProps) {
   // Only wrap with ClerkProvider if Clerk is available and configured
   if (isClerkAvailable) {
-    try {
-      const ClerkProvider = require('@clerk/nextjs').ClerkProvider;
-      return <ClerkProvider>{children}</ClerkProvider>;
-    } catch (error) {
-      // Fallback if ClerkProvider fails to load
-      console.warn('ClerkProvider failed to load:', error);
-      return <>{children}</>;
-    }
+    // Use dynamic import to safely load Clerk only when needed
+    const ClerkProviderComponent = dynamic(() =>
+      import('@clerk/nextjs').then(mod => ({ default: mod.ClerkProvider })), {
+        ssr: false, // Disable SSR for ClerkProvider
+        loading: () => <>{children}</>
+      }
+    );
+
+    return <ClerkProviderComponent>{children}</ClerkProviderComponent>;
   }
 
   return <>{children}</>;

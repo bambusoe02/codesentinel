@@ -2,6 +2,9 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Home } from 'lucide-react';
 
+// Force dynamic rendering to avoid prerendering issues
+export const dynamic = 'force-dynamic';
+
 export default function NotFound() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100 dark:from-slate-950 dark:via-slate-900 dark:to-slate-800 flex items-center justify-center px-4">
