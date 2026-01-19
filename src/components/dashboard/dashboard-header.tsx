@@ -1,6 +1,5 @@
 'use client';
 
-import { UserButton } from '@clerk/nextjs';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -9,6 +8,7 @@ import {
   Search,
   Plus,
   Github,
+  User,
 } from 'lucide-react';
 import { useUIStore } from '@/lib/stores/ui-store';
 
@@ -55,14 +55,9 @@ export function DashboardHeader() {
           </Button>
 
           {/* User Menu */}
-          <UserButton
-            afterSignOutUrl="/"
-            appearance={{
-              elements: {
-                avatarBox: 'w-8 h-8',
-              },
-            }}
-          />
+          <Button variant="ghost" size="sm" className="w-8 h-8 p-0 rounded-full">
+            <User className="w-4 h-4" />
+          </Button>
         </div>
       </div>
     </header>

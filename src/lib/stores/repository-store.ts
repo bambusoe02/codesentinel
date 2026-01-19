@@ -1,5 +1,41 @@
 import { create } from 'zustand';
-import { Repository, AnalysisReport, RepositoryMetric } from '@/lib/schema';
+
+// Local type definitions (moved from schema.ts for demo mode)
+interface Repository {
+  id: string;
+  name: string;
+  full_name: string;
+  description: string;
+  html_url: string;
+  owner: {
+    login: string;
+    avatar_url: string;
+  };
+  created_at: string;
+  updated_at: string;
+  pushed_at: string;
+  stargazers_count: number;
+  language: string;
+  topics: string[];
+}
+
+interface AnalysisReport {
+  id: string;
+  repositoryId: string;
+  overallScore: number;
+  issues: any[];
+  recommendations: any[];
+  createdAt: string;
+  shareToken?: string;
+}
+
+interface RepositoryMetric {
+  id: string;
+  repositoryId: string;
+  metricType: string;
+  value: number;
+  timestamp: string;
+}
 
 interface RepositoryState {
   repositories: Repository[];

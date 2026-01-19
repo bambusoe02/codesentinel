@@ -13,7 +13,6 @@ import {
   FileText,
   Share2
 } from "lucide-react";
-import { SignedIn, SignedOut, SignInButton } from "@clerk/nextjs";
 
 export default function Home() {
   return (
@@ -30,16 +29,9 @@ export default function Home() {
             </span>
           </div>
           <div className="flex items-center space-x-4">
-            <SignedOut>
-              <SignInButton mode="modal">
-                <Button variant="ghost">Sign In</Button>
-              </SignInButton>
-            </SignedOut>
-            <SignedIn>
-              <Link href="/dashboard">
-                <Button>Go to Dashboard</Button>
-              </Link>
-            </SignedIn>
+            <Link href="/dashboard">
+              <Button>Go to Dashboard</Button>
+            </Link>
           </div>
         </div>
       </nav>
@@ -61,22 +53,12 @@ export default function Home() {
             before they impact your team.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-            <SignedOut>
-              <SignInButton mode="modal">
-                <Button size="lg" className="text-lg px-8 py-6">
-                  Start Free Analysis
-                  <ArrowRight className="ml-2 w-5 h-5" />
-                </Button>
-              </SignInButton>
-            </SignedOut>
-            <SignedIn>
-              <Link href="/dashboard">
-                <Button size="lg" className="text-lg px-8 py-6">
-                  Go to Dashboard
-                  <ArrowRight className="ml-2 w-5 h-5" />
-                </Button>
-              </Link>
-            </SignedIn>
+            <Link href="/dashboard">
+              <Button size="lg" className="text-lg px-8 py-6">
+                Start Free Analysis
+                <ArrowRight className="ml-2 w-5 h-5" />
+              </Button>
+            </Link>
             <Button variant="outline" size="lg" className="text-lg px-8 py-6">
               Watch Demo
             </Button>
@@ -212,22 +194,12 @@ export default function Home() {
             high-quality, secure, and performant codebases.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <SignedOut>
-              <SignInButton mode="modal">
-                <Button size="lg" className="text-lg px-8 py-6">
-                  Start Your First Analysis
-                  <Github className="ml-2 w-5 h-5" />
-                </Button>
-              </SignInButton>
-            </SignedOut>
-            <SignedIn>
-              <Link href="/dashboard">
-                <Button size="lg" className="text-lg px-8 py-6">
-                  Go to Dashboard
-                  <ArrowRight className="ml-2 w-5 h-5" />
-                </Button>
-              </Link>
-            </SignedIn>
+            <Link href="/dashboard">
+              <Button size="lg" className="text-lg px-8 py-6">
+                Start Your First Analysis
+                <Github className="ml-2 w-5 h-5" />
+              </Button>
+            </Link>
           </div>
           <p className="text-sm text-slate-500 mt-4">
             Free tier includes 5 repositories. No credit card required.
