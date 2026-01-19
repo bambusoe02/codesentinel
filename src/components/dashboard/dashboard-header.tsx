@@ -8,9 +8,14 @@ import {
   Search,
   Plus,
   Github,
-  User,
 } from 'lucide-react';
 import { useUIStore } from '@/lib/stores/ui-store';
+import dynamic from 'next/dynamic';
+
+const UserButton = dynamic(() => import('@clerk/nextjs').then(mod => ({ default: mod.UserButton })), {
+  ssr: false,
+  loading: () => <div className="w-8 h-8 bg-gray-200 rounded-full animate-pulse" />
+});
 
 export function DashboardHeader() {
   const { setSearchQuery } = useUIStore();
@@ -55,9 +60,14 @@ export function DashboardHeader() {
           </Button>
 
           {/* User Menu */}
-          <Button variant="ghost" size="sm" className="w-8 h-8 p-0 rounded-full">
-            <User className="w-4 h-4" />
-          </Button>
+          <UserButton
+            afterSignOutUrl="/"
+            appearance={{
+              elements: {
+                avatarBox: 'w-8 h-8',
+              },
+            }}
+          />
         </div>
       </div>
     </header>
