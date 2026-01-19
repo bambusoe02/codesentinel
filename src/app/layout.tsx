@@ -10,6 +10,7 @@ import "./globals.css";
 // Check if Clerk is available on server
 let isClerkAvailable = false;
 try {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
   require('@clerk/nextjs');
   // Check both public and secret keys
   const hasPublishableKey = !!process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
@@ -25,8 +26,7 @@ try {
     hasDatabaseUrl: !!process.env.DATABASE_URL,
     hasGitHubToken: !!process.env.GITHUB_TOKEN
   });
-} catch (error) {
-  console.log('Clerk package not available:', error);
+} catch {
   isClerkAvailable = false;
 }
 

@@ -18,8 +18,8 @@ let isClerkAvailable = false;
 if (typeof window !== 'undefined') {
   // Client-side check
   try {
-    isClerkAvailable = !!(window as any).Clerk;
-  } catch (error) {
+    isClerkAvailable = !!((window as unknown as { Clerk?: unknown }).Clerk);
+  } catch {
     isClerkAvailable = false;
   }
 }
@@ -38,7 +38,7 @@ interface DashboardHeaderProps {
   isClerkAvailable?: boolean;
 }
 
-export function DashboardHeader({ isClerkAvailable: clerkAvailable }: DashboardHeaderProps = {}) {
+export function DashboardHeader({}: DashboardHeaderProps = {}) {
   const { setSearchQuery } = useUIStore();
 
   return (

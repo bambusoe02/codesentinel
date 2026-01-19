@@ -5,11 +5,12 @@ import dynamic from "next/dynamic";
 // Check if Clerk is available on server
 let isClerkAvailable = false;
 try {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
   require('@clerk/nextjs');
   const hasPublishableKey = !!process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
   const hasSecretKey = !!process.env.CLERK_SECRET_KEY;
   isClerkAvailable = hasPublishableKey && hasSecretKey;
-} catch (error) {
+} catch {
   isClerkAvailable = false;
 }
 
