@@ -7,6 +7,9 @@ import { Skeleton } from '@/components/ui/skeleton';
 
 export const dynamic = 'force-dynamic';
 
+// Disable static generation for dashboard
+export const generateStaticParams = undefined;
+
 export default function DashboardPage() {
   return (
     <div className="space-y-6">

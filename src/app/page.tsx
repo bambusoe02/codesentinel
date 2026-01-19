@@ -1,6 +1,19 @@
 import Link from "next/link";
-import { SignedIn, SignedOut, SignInButton } from "@clerk/nextjs";
 import { Button } from "@/components/ui/button";
+import dynamic from "next/dynamic";
+
+// Conditionally load Clerk components
+const SignedIn = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY
+  ? dynamic(() => import("@clerk/nextjs").then(mod => ({ default: mod.SignedIn })))
+  : ({ children }: { children: React.ReactNode }) => <>{children}</>;
+
+const SignedOut = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY
+  ? dynamic(() => import("@clerk/nextjs").then(mod => ({ default: mod.SignedOut })))
+  : ({ children }: { children: React.ReactNode }) => <>{children}</>;
+
+const SignInButton = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY
+  ? dynamic(() => import("@clerk/nextjs").then(mod => ({ default: mod.SignInButton })))
+  : ({ children }: { children: React.ReactNode }) => <>{children}</>;
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {

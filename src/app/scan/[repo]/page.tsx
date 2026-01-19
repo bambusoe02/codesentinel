@@ -5,6 +5,9 @@ import { ScanProgress } from '@/components/scan/scan-progress';
 import { ScanResults } from '@/components/scan/scan-results';
 import { Skeleton } from '@/components/ui/skeleton';
 
+// Force dynamic rendering to avoid build-time issues
+export const dynamic = 'force-dynamic';
+
 interface ScanPageProps {
   params: {
     repo: string;

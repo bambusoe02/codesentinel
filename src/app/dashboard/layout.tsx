@@ -1,17 +1,31 @@
 import { redirect } from 'next/navigation';
-import { auth } from '@clerk/nextjs/server';
 import { DashboardNav } from '@/components/dashboard/dashboard-nav';
 import { DashboardHeader } from '@/components/dashboard/dashboard-header';
+
+// Conditionally import Clerk auth
+let auth: () => Promise<{ userId: string | null }> = async () => ({ userId: null });
+
+try {
+  if (process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY && process.env.CLERK_SECRET_KEY) {
+    const clerkAuth = await import('@clerk/nextjs/server');
+    auth = clerkAuth.auth;
+  }
+} catch (error) {
+  // Clerk not available, continue without authentication
+}
 
 export default async function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const { userId } = await auth();
+  // Only check authentication if Clerk is configured
+  if (process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY && process.env.CLERK_SECRET_KEY) {
+    const { userId } = await auth();
 
-  if (!userId) {
-    redirect('/');
+    if (!userId) {
+      redirect('/');
+    }
   }
 
   return (
