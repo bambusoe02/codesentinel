@@ -1,5 +1,23 @@
-import { pgTable, text, integer, timestamp, jsonb, uuid, boolean, varchar } from 'drizzle-orm/pg-core';
+import { pgTable, text, integer, timestamp, jsonb, uuid } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
+
+// Type definitions for JSON fields
+interface AnalysisIssue {
+  id: string;
+  type: 'security' | 'performance' | 'maintainability' | 'reliability';
+  severity: 'low' | 'medium' | 'high' | 'critical';
+  title: string;
+  description?: string;
+}
+
+interface Recommendation {
+  id: string;
+  type: 'immediate' | 'short-term' | 'long-term';
+  title: string;
+  description: string;
+  priority: number;
+  impact: string;
+}
 
 // Users table (linked to Clerk)
 export const users = pgTable('users', {
@@ -34,8 +52,8 @@ export const analysisReports = pgTable('analysis_reports', {
   userId: uuid('user_id').references(() => users.id).notNull(),
   repositoryId: uuid('repository_id').references(() => repositories.id).notNull(),
   overallScore: integer('overall_score').notNull(),
-  issues: jsonb('issues').$type<any[]>(),
-  recommendations: jsonb('recommendations').$type<any[]>(),
+  issues: jsonb('issues').$type<AnalysisIssue[]>(),
+  recommendations: jsonb('recommendations').$type<Recommendation[]>(),
   shareToken: text('share_token'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });
