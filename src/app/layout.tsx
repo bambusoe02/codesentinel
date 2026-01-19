@@ -11,8 +11,22 @@ import "./globals.css";
 let isClerkAvailable = false;
 try {
   require('@clerk/nextjs');
-  isClerkAvailable = !!(process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY && process.env.CLERK_SECRET_KEY);
+  // Check both public and secret keys
+  const hasPublishableKey = !!process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
+  const hasSecretKey = !!process.env.CLERK_SECRET_KEY;
+  isClerkAvailable = hasPublishableKey && hasSecretKey;
+
+  console.log('Clerk availability check:', {
+    hasPublishableKey,
+    hasSecretKey,
+    isClerkAvailable,
+    nodeEnv: process.env.NODE_ENV,
+    publishableKeyPrefix: process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY?.substring(0, 10) + '...',
+    hasDatabaseUrl: !!process.env.DATABASE_URL,
+    hasGitHubToken: !!process.env.GITHUB_TOKEN
+  });
 } catch (error) {
+  console.log('Clerk package not available:', error);
   isClerkAvailable = false;
 }
 
@@ -31,9 +45,7 @@ export const metadata: Metadata = {
   description: "Professional AI-powered GitHub repository analysis for engineering managers. Analyze code quality, security risks, and performance issues.",
   keywords: ["GitHub", "code analysis", "AI", "repository analyzer", "tech debt", "security", "performance"],
   authors: [{ name: "CodeSentinel Team" }],
-  viewport: "width=device-width, initial-scale=1",
   manifest: "/manifest.json",
-  themeColor: "#2563eb",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
@@ -42,7 +54,7 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     locale: "en_US",
-    url: "https://codesentinel.app",
+    url: "https://codesentinel-six.vercel.app",
     title: "CodeSentinel - AI GitHub Repository Analyzer",
     description: "Professional AI-powered GitHub repository analysis for engineering managers",
     siteName: "CodeSentinel",
@@ -53,6 +65,11 @@ export const metadata: Metadata = {
     description: "Professional AI-powered GitHub repository analysis for engineering managers",
     creator: "@codesentinel",
   },
+};
+
+export const viewport = {
+  width: "device-width",
+  initialScale: 1,
 };
 
 export default function RootLayout({

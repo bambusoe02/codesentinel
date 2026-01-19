@@ -13,13 +13,15 @@ import {
 import { useUIStore } from '@/lib/stores/ui-store';
 import dynamic from 'next/dynamic';
 
-// Check if Clerk is available
+// Check if Clerk is available at runtime
 let isClerkAvailable = false;
-try {
-  require('@clerk/nextjs');
-  isClerkAvailable = !!(process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY && process.env.CLERK_SECRET_KEY);
-} catch (error) {
-  isClerkAvailable = false;
+if (typeof window !== 'undefined') {
+  // Client-side check
+  try {
+    isClerkAvailable = !!(window as any).Clerk;
+  } catch (error) {
+    isClerkAvailable = false;
+  }
 }
 
 // Conditionally load UserButton only if Clerk is configured
@@ -32,7 +34,11 @@ const UserButtonComponent = isClerkAvailable
       <User className="w-4 h-4" />
     </Button>;
 
-export function DashboardHeader() {
+interface DashboardHeaderProps {
+  isClerkAvailable?: boolean;
+}
+
+export function DashboardHeader({ isClerkAvailable: clerkAvailable }: DashboardHeaderProps = {}) {
   const { setSearchQuery } = useUIStore();
 
   return (

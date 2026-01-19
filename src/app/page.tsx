@@ -6,7 +6,9 @@ import dynamic from "next/dynamic";
 let isClerkAvailable = false;
 try {
   require('@clerk/nextjs');
-  isClerkAvailable = !!(process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY && process.env.CLERK_SECRET_KEY);
+  const hasPublishableKey = !!process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
+  const hasSecretKey = !!process.env.CLERK_SECRET_KEY;
+  isClerkAvailable = hasPublishableKey && hasSecretKey;
 } catch (error) {
   isClerkAvailable = false;
 }

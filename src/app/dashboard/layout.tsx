@@ -34,7 +34,7 @@ export default async function DashboardLayout({
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
-      <DashboardHeader />
+      <DashboardHeader isClerkAvailable={isClerkAvailable} />
       <div className="flex">
         <DashboardNav />
         <main className="flex-1 p-6 overflow-auto">
