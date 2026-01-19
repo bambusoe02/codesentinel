@@ -2,7 +2,7 @@
   "name": "code-sentinel",
   "version": "0.1.0",
   "private": true,
-  "description": "Professional AI-powered GitHub repository analysis for engineering managers",
+  "description": "Demo of AI-powered GitHub repository analysis with interactive features",
   "author": "Marcin Baran <bambusoe@gmail.com>",
   "license": "MIT",
   "repository": {

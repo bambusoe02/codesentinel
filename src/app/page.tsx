@@ -40,7 +40,7 @@ export default function Home() {
       <section className="container mx-auto px-4 py-20 text-center">
         <div className="max-w-4xl mx-auto">
           <Badge variant="secondary" className="mb-6">
-            🚀 Trusted by 50+ Engineering Teams
+            🚀 AI-Powered Code Analysis Demo
           </Badge>
           <h1 className="text-5xl md:text-7xl font-bold mb-6 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 dark:from-white dark:via-slate-200 dark:to-white bg-clip-text text-transparent">
             AI-Powered GitHub
@@ -159,25 +159,44 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Stats Section */}
+      {/* Features Section */}
       <section className="bg-slate-900 dark:bg-black py-20">
         <div className="container mx-auto px-4">
-          <div className="grid md:grid-cols-4 gap-8 text-center">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl font-bold text-white mb-4">Demo Features</h2>
+            <p className="text-slate-400 max-w-2xl mx-auto">
+              Explore the capabilities of AI-powered code analysis with our interactive demo.
+              See how CodeSentinel can help analyze and improve your codebase quality.
+            </p>
+          </div>
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8 text-center">
             <div>
-              <div className="text-4xl font-bold text-white mb-2">50+</div>
-              <div className="text-slate-400">Engineering Teams</div>
+              <div className="w-12 h-12 bg-blue-600 rounded-lg flex items-center justify-center mx-auto mb-4">
+                <Shield className="w-6 h-6 text-white" />
+              </div>
+              <div className="text-white font-semibold mb-2">Security Analysis</div>
+              <div className="text-slate-400 text-sm">Detect vulnerabilities and security issues</div>
             </div>
             <div>
-              <div className="text-4xl font-bold text-white mb-2">10K+</div>
-              <div className="text-slate-400">Repos Analyzed</div>
+              <div className="w-12 h-12 bg-green-600 rounded-lg flex items-center justify-center mx-auto mb-4">
+                <TrendingUp className="w-6 h-6 text-white" />
+              </div>
+              <div className="text-white font-semibold mb-2">Code Quality</div>
+              <div className="text-slate-400 text-sm">Analyze maintainability and complexity</div>
             </div>
             <div>
-              <div className="text-4xl font-bold text-white mb-2">95%</div>
-              <div className="text-slate-400">Accuracy Rate</div>
+              <div className="w-12 h-12 bg-purple-600 rounded-lg flex items-center justify-center mx-auto mb-4">
+                <BarChart3 className="w-6 h-6 text-white" />
+              </div>
+              <div className="text-white font-semibold mb-2">Interactive Reports</div>
+              <div className="text-slate-400 text-sm">Visual dashboards and insights</div>
             </div>
             <div>
-              <div className="text-4xl font-bold text-white mb-2">24/7</div>
-              <div className="text-slate-400">AI Analysis</div>
+              <div className="w-12 h-12 bg-orange-600 rounded-lg flex items-center justify-center mx-auto mb-4">
+                <FileText className="w-6 h-6 text-white" />
+              </div>
+              <div className="text-white font-semibold mb-2">PDF Export</div>
+              <div className="text-slate-400 text-sm">Generate professional reports</div>
             </div>
           </div>
         </div>
@@ -202,7 +221,7 @@ export default function Home() {
             </Link>
           </div>
           <p className="text-sm text-slate-500 mt-4">
-            Free tier includes 5 repositories. No credit card required.
+            Interactive demo with sample data. Try the analysis features.
           </p>
         </div>
       </section>
@@ -215,7 +234,7 @@ export default function Home() {
               <Code className="w-4 h-4 text-white" />
             </div>
             <span className="font-semibold">CodeSentinel</span>
-            <span className="text-slate-500">© 2024</span>
+            <span className="text-slate-500">© 2026</span>
           </div>
         </div>
       </footer>

@@ -1,13 +1,11 @@
 # 🚀 CodeSentinel - AI GitHub Repository Analyzer
 
-[![Next.js](https://img.shields.io/badge/Next.js-15.0-black)](https://nextjs.org/)
+[![Next.js](https://img.shields.io/badge/Next.js-16.0-black)](https://nextjs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue)](https://www.typescriptlang.org/)
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind-4.0-38B2AC)](https://tailwindcss.com/)
-[![Clerk](https://img.shields.io/badge/Clerk-Auth-6B46C1)](https://clerk.com/)
-[![Neon](https://img.shields.io/badge/Neon-Postgres-00E699)](https://neon.tech/)
 [![Vercel](https://img.shields.io/badge/Vercel-Deploy-000000)](https://vercel.com/)
 
-**Professional AI-powered GitHub repository analysis for engineering managers.** Transform your engineering management with intelligent code analysis that identifies tech debt, security vulnerabilities, and performance bottlenecks before they impact your team.
+**Demo of AI-powered GitHub repository analysis.** Interactive demonstration of intelligent code analysis features that can identify tech debt, security vulnerabilities, and performance bottlenecks in codebases.
 
 ![CodeSentinel Demo](./demo.gif)
 
