@@ -27,7 +27,7 @@ npm run generate:encryption-key
 ### KROK 1: Utwórz tabele w bazie
 ```bash
 # Ustaw DATABASE_URL
-export DATABASE_URL="postgresql://neondb_owner:npg_71KzkANLtsYW@ep-flat-base-agknbdmi-pooler.c-2.eu-central-1.aws.neon.tech/neondb?sslmode=require"
+export DATABASE_URL="postgresql://neondb_owner:npg_ePYVWi6nMT7F@ep-bitter-brook-ag1latts-pooler.c-2.eu-central-1.aws.neon.tech/neondb?sslmode=require"
 
 # Uruchom automatyczny setup (interaktywny)
 npm run setup:production
@@ -51,7 +51,7 @@ Przejdź do: https://vercel.com/dashboard → Settings → Environment Variables
 Dodaj wszystkie zmienne (dla Production, Preview, Development):
 
 #### Wymagane:
-- `DATABASE_URL` = `postgresql://neondb_owner:npg_71KzkANLtsYW@ep-flat-base-agknbdmi-pooler.c-2.eu-central-1.aws.neon.tech/neondb?sslmode=require`
+- `DATABASE_URL` = `postgresql://neondb_owner:npg_ePYVWi6nMT7F@ep-bitter-brook-ag1latts-pooler.c-2.eu-central-1.aws.neon.tech/neondb?sslmode=require`
 - `ENCRYPTION_KEY` = `3DlWJJdcdSdExL8w3cvl3QZm8C7hC33BmTLaEV0kunY=`
 - `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` = [Production key z Clerk]
 - `CLERK_SECRET_KEY` = [Production key z Clerk]

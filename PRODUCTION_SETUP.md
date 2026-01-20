@@ -19,7 +19,7 @@ Skrypt automatycznie:
 **Opcja B: Ręcznie:**
 ```bash
 # 1. Ustaw DATABASE_URL
-export DATABASE_URL="postgresql://neondb_owner:npg_71KzkANLtsYW@ep-flat-base-agknbdmi-pooler.c-2.eu-central-1.aws.neon.tech/neondb?sslmode=require"
+export DATABASE_URL="postgresql://neondb_owner:npg_ePYVWi6nMT7F@ep-bitter-brook-ag1latts-pooler.c-2.eu-central-1.aws.neon.tech/neondb?sslmode=require"
 
 # 2. Uruchom push schematu
 npm run db:push
@@ -88,7 +88,7 @@ npm run setup:env
 #### A. DATABASE_URL
 ```
 Name: DATABASE_URL
-Value: postgresql://neondb_owner:npg_71KzkANLtsYW@ep-flat-base-agknbdmi-pooler.c-2.eu-central-1.aws.neon.tech/neondb?sslmode=require
+Value: postgresql://neondb_owner:npg_ePYVWi6nMT7F@ep-bitter-brook-ag1latts-pooler.c-2.eu-central-1.aws.neon.tech/neondb?sslmode=require
 Environment: ✅ Production, ✅ Preview, ✅ Development
 ```
 
