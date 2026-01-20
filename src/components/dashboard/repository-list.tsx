@@ -1,6 +1,5 @@
 'use client';
 
-import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -10,10 +9,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import {
   Github,
   Star,
-  GitFork,
   AlertCircle,
-  CheckCircle,
-  Clock,
   ExternalLink,
   RefreshCw,
 } from 'lucide-react';
@@ -90,12 +86,15 @@ export function RepositoryList() {
 
   return (
     <Card>
-      <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle>Your Repositories</CardTitle>
+      <CardHeader className="flex flex-row items-center justify-between gap-2">
+        <CardTitle className="text-lg sm:text-xl">Your Repositories</CardTitle>
         <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={() => refetch()}>
+          <Button variant="outline" size="sm" onClick={() => refetch()} className="hidden sm:flex">
             <RefreshCw className="w-4 h-4 mr-2" />
             Refresh
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => refetch()} className="sm:hidden">
+            <RefreshCw className="w-4 h-4" />
           </Button>
         </div>
       </CardHeader>
@@ -104,10 +103,10 @@ export function RepositoryList() {
           {repositories.map((repo) => (
             <div
               key={repo.id}
-              className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors"
+              className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors gap-3 sm:gap-0"
             >
-              <div className="flex items-center space-x-4 flex-1">
-                <Avatar className="w-10 h-10">
+              <div className="flex items-center space-x-3 sm:space-x-4 flex-1 min-w-0">
+                <Avatar className="w-10 h-10 flex-shrink-0">
                   {repo.owner?.avatar_url && (
                     <AvatarImage src={repo.owner.avatar_url} alt={repo.owner.login} />
                   )}
@@ -116,16 +115,16 @@ export function RepositoryList() {
                   </AvatarFallback>
                 </Avatar>
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center space-x-2">
-                    <h3 className="font-medium truncate">{repo.name}</h3>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h3 className="font-medium truncate text-sm sm:text-base">{repo.name}</h3>
                     {repo.language && (
-                      <Badge variant="outline" className="text-xs">
+                      <Badge variant="outline" className="text-xs flex-shrink-0">
                         {repo.language}
                       </Badge>
                     )}
                   </div>
                   {repo.description && (
-                    <p className="text-sm text-muted-foreground truncate">
+                    <p className="text-xs sm:text-sm text-muted-foreground truncate mt-1">
                       {repo.description}
                     </p>
                   )}
@@ -137,23 +136,22 @@ export function RepositoryList() {
                   </div>
                 </div>
               </div>
-              <div className="flex items-center space-x-2">
-                <div className="flex flex-col space-y-2">
-                  <Link href={`/scan/${encodeURIComponent(repo.fullName)}`}>
-                    <Button size="sm" variant="outline">
-                      Analyze
-                    </Button>
-                  </Link>
-                  <Button 
-                    size="sm" 
-                    variant="ghost"
-                    asChild
-                  >
-                    <a href={repo.htmlUrl} target="_blank" rel="noopener noreferrer">
-                      <ExternalLink className="w-3 h-3" />
-                    </a>
+              <div className="flex items-center space-x-2 sm:flex-col sm:space-y-2 sm:space-x-0">
+                <Link href={`/scan/${encodeURIComponent(repo.fullName)}`} className="flex-1 sm:flex-none">
+                  <Button size="sm" variant="outline" className="w-full sm:w-auto">
+                    Analyze
                   </Button>
-                </div>
+                </Link>
+                <Button 
+                  size="sm" 
+                  variant="ghost"
+                  asChild
+                  className="sm:w-auto"
+                >
+                  <a href={repo.htmlUrl} target="_blank" rel="noopener noreferrer" className="inline-flex">
+                    <ExternalLink className="w-4 h-4 sm:w-3 sm:h-3" />
+                  </a>
+                </Button>
               </div>
             </div>
           ))}

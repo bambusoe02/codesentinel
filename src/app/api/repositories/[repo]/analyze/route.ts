@@ -5,6 +5,7 @@ import { eq, and } from 'drizzle-orm';
 import { NextResponse } from 'next/server';
 import { GitHubClient } from '@/lib/github';
 import { CodeAnalyzer } from '@/lib/analyzer';
+import { decrypt } from '@/lib/encryption';
 
 export async function POST(
   request: Request,
@@ -53,17 +54,34 @@ export async function POST(
       return NextResponse.json({ error: 'Repository not found' }, { status: 404 });
     }
 
-    const githubToken = process.env.GITHUB_TOKEN;
+    // Try to get GitHub token from user's stored token (decrypt if encrypted), fallback to environment
+    let githubToken: string | null = null;
+    
+    if (user.githubToken) {
+      try {
+        // Try to decrypt (if encrypted)
+        githubToken = decrypt(user.githubToken);
+      } catch (error) {
+        // If decryption fails, token might be plain text (backward compatibility)
+        githubToken = user.githubToken;
+        console.warn('Failed to decrypt token, using as plain text:', error);
+      }
+    } else {
+      githubToken = process.env.GITHUB_TOKEN || null;
+    }
+    
     if (!githubToken) {
-      return NextResponse.json({ error: 'GitHub token not configured' }, { status: 500 });
+      return NextResponse.json({ 
+        error: 'GitHub token not configured. Sign in with GitHub OAuth or add your token in Settings.'
+      }, { status: 500 });
     }
 
     const [owner, name] = repoFullName.split('/');
     const githubClient = new GitHubClient(githubToken);
 
     // Fetch repository data
-    const [repoData, stats, commits] = await Promise.all([
-      githubClient.getRepository(owner, name),
+    const [, stats, commits] = await Promise.all([
+      githubClient.getRepository(owner, name), // Validated but not used directly
       githubClient.getRepositoryStats(owner, name),
       githubClient.getRepositoryCommits(owner, name, undefined, undefined, 30),
     ]);

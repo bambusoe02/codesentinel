@@ -3,7 +3,8 @@ import { db } from '@/lib/db';
 import { users, repositories } from '@/lib/schema';
 import { eq } from 'drizzle-orm';
 import { NextResponse } from 'next/server';
-import { GitHubClient } from '@/lib/github';
+import { GitHubClient, type GitHubRepository } from '@/lib/github';
+import { decrypt } from '@/lib/encryption';
 
 export async function GET() {
   try {
@@ -32,9 +33,23 @@ export async function GET() {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
-    // Try to get GitHub token from environment or user's stored token
-    // In production, you'd get this from Clerk session or user's stored token
-    const githubToken = process.env.GITHUB_TOKEN;
+    // Try to get GitHub token from user's stored token (decrypt if encrypted), fallback to environment
+    let githubToken: string | null = null;
+    
+    if (user.githubToken) {
+      try {
+        // Try to decrypt (if encrypted) - if it fails, assume it's plain text (for backward compatibility)
+        githubToken = decrypt(user.githubToken);
+      } catch (error) {
+        // If decryption fails, token might be plain text or corrupted
+        // Try using it as-is (for backward compatibility with non-encrypted tokens)
+        githubToken = user.githubToken;
+        console.warn('Failed to decrypt token, using as plain text:', error);
+      }
+    } else {
+      // Fallback to environment token (for backward compatibility)
+      githubToken = process.env.GITHUB_TOKEN || null;
+    }
 
     if (!githubToken) {
       // Return cached repositories from database
@@ -43,7 +58,10 @@ export async function GET() {
         .from(repositories)
         .where(eq(repositories.userId, user.id));
 
-      return NextResponse.json({ repositories: cachedRepos });
+      return NextResponse.json({ 
+        repositories: cachedRepos,
+        message: 'No GitHub token configured. Sign in with GitHub OAuth or add your token in Settings.'
+      });
     }
 
     // Fetch from GitHub API
@@ -52,7 +70,7 @@ export async function GET() {
 
     // Sync with database
     const syncedRepos = await Promise.all(
-      githubRepos.map(async (repo) => {
+      githubRepos.map(async (repo: GitHubRepository) => {
         const [existing] = await db
           .select()
           .from(repositories)
@@ -70,7 +88,7 @@ export async function GET() {
               owner: repo.owner,
               stargazersCount: repo.stargazers_count,
               language: repo.language || null,
-              topics: (repo as any).topics || [],
+              topics: repo.topics || [],
               updatedAt: new Date(),
             })
             .where(eq(repositories.id, existing.id))
@@ -90,7 +108,7 @@ export async function GET() {
               owner: repo.owner,
               stargazersCount: repo.stargazers_count,
               language: repo.language || null,
-              topics: (repo as any).topics || [],
+              topics: repo.topics || [],
             })
             .returning();
 

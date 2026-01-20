@@ -11,7 +11,16 @@ import {
 import { useQuery } from '@tanstack/react-query';
 import { formatDistanceToNow } from 'date-fns';
 
-async function fetchRecentActivity() {
+interface Activity {
+  id: string;
+  repositoryName: string;
+  repositoryFullName: string;
+  overallScore: number;
+  createdAt: string;
+  issues: unknown[] | null;
+}
+
+async function fetchRecentActivity(): Promise<Activity[]> {
   const response = await fetch('/api/analysis/recent');
   if (!response.ok) {
     throw new Error('Failed to fetch recent activity');
@@ -26,8 +35,17 @@ export function RecentActivity() {
     queryFn: fetchRecentActivity,
   });
 
-  const formattedActivities = useMemo(() => {
-    return activities.map((activity: any) => {
+  interface FormattedActivity {
+    id: string;
+    title: string;
+    description: string;
+    time: string;
+    icon: React.ElementType;
+    color: string;
+  }
+
+  const formattedActivities = useMemo((): FormattedActivity[] => {
+    return activities.map((activity: Activity): FormattedActivity => {
       const issuesCount = Array.isArray(activity.issues) ? activity.issues.length : 0;
       const hasIssues = issuesCount > 0;
       
@@ -62,20 +80,20 @@ export function RecentActivity() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Recent Activity</CardTitle>
+        <CardTitle className="text-lg sm:text-xl">Recent Activity</CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="space-y-4">
-          {formattedActivities.map((activity: { id: string; title: string; description: string; time: string; icon: any; color: string }) => {
+        <div className="space-y-3 sm:space-y-4">
+          {formattedActivities.map((activity: FormattedActivity) => {
             const Icon = activity.icon;
             return (
-              <div key={activity.id} className="flex items-start space-x-3">
-                <div className={`p-2 rounded-full bg-muted ${activity.color}`}>
-                  <Icon className="w-4 h-4" />
+              <div key={activity.id} className="flex items-start space-x-2 sm:space-x-3">
+                <div className={`p-1.5 sm:p-2 rounded-full bg-muted ${activity.color} flex-shrink-0`}>
+                  <Icon className="w-3 h-3 sm:w-4 sm:h-4" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium">{activity.title}</p>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-xs sm:text-sm font-medium truncate">{activity.title}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">
                     {activity.description}
                   </p>
                   <p className="text-xs text-muted-foreground mt-1">

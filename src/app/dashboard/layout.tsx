@@ -41,8 +41,12 @@ export default async function DashboardLayout({
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
       <DashboardHeader isClerkAvailable={isClerkAvailable} />
       <div className="flex">
-        <DashboardNav />
-        <main className="flex-1 p-6 overflow-auto">
+        {/* Desktop Navigation - Hidden on mobile */}
+        <aside className="hidden lg:block">
+          <DashboardNav />
+        </aside>
+        {/* Main Content */}
+        <main className="flex-1 p-4 sm:p-6 overflow-auto">
           {children}
         </main>
       </div>

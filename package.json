@@ -2,7 +2,7 @@
   "name": "code-sentinel",
   "version": "0.1.0",
   "private": true,
-  "description": "Demo of AI-powered GitHub repository analysis with interactive features",
+  "description": "Production-ready AI-powered GitHub repository analysis platform with enterprise features",
   "author": "Marcin Baran <bambusoe@gmail.com>",
   "license": "MIT",
   "repository": {
@@ -20,7 +20,10 @@
     "lint": "eslint",
     "db:generate": "drizzle-kit generate",
     "db:push": "drizzle-kit push",
-    "db:studio": "drizzle-kit studio"
+    "db:studio": "drizzle-kit studio",
+    "setup:production": "bash scripts/setup-production.sh",
+    "setup:env": "bash scripts/generate-env-template.sh",
+    "generate:encryption-key": "openssl rand -base64 32"
   },
   "dependencies": {
     "@clerk/nextjs": "^6.36.8",

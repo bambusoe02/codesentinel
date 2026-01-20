@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import dynamic from "next/dynamic";
@@ -43,11 +43,7 @@ const SignInButton = dynamic(() =>
 
 // Wrapper component to conditionally render Clerk components
 function ClerkWrapper({ children, fallback }: { children: React.ReactNode; fallback?: React.ReactNode }) {
-  const [isAvailable, setIsAvailable] = useState(false);
-
-  useEffect(() => {
-    setIsAvailable(getClerkAvailable());
-  }, []);
+  const [isAvailable] = useState(() => getClerkAvailable());
 
   if (!isAvailable) {
     return <>{fallback || null}</>;
@@ -61,29 +57,31 @@ export default function Home() {
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100 dark:from-slate-950 dark:via-slate-900 dark:to-slate-800">
       {/* Navigation */}
       <nav className="border-b bg-white/80 backdrop-blur-sm dark:bg-slate-900/80">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
+        <div className="container mx-auto px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between">
           <div className="flex items-center space-x-2">
             <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
               <Code className="w-5 h-5 text-white" />
             </div>
-            <span className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+            <span className="text-lg sm:text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
               CodeSentinel
             </span>
           </div>
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-2 sm:space-x-4">
             <ClerkWrapper fallback={
               <Link href="/dashboard">
-                <Button>Go to Dashboard</Button>
+                <Button size="sm" className="hidden sm:inline-flex">Go to Dashboard</Button>
+                <Button size="sm" className="sm:hidden">Dashboard</Button>
               </Link>
             }>
               <SignedOut>
                 <SignInButton mode="modal">
-                  <Button variant="ghost">Sign In</Button>
+                  <Button variant="ghost" size="sm" className="text-sm">Sign In</Button>
                 </SignInButton>
               </SignedOut>
               <SignedIn>
                 <Link href="/dashboard">
-                  <Button>Go to Dashboard</Button>
+                  <Button size="sm" className="hidden sm:inline-flex">Go to Dashboard</Button>
+                  <Button size="sm" className="sm:hidden">Dashboard</Button>
                 </Link>
               </SignedIn>
             </ClerkWrapper>
@@ -92,61 +90,64 @@ export default function Home() {
       </nav>
 
       {/* Hero Section */}
-      <section className="container mx-auto px-4 py-20 text-center">
+      <section className="container mx-auto px-4 sm:px-6 py-12 sm:py-20 text-center">
         <div className="max-w-4xl mx-auto">
-          <Badge variant="secondary" className="mb-6">
-            🚀 AI-Powered Code Analysis Demo
+          <Badge variant="secondary" className="mb-4 sm:mb-6 text-xs sm:text-sm">
+            🚀 AI-Powered Code Analysis
           </Badge>
-          <h1 className="text-5xl md:text-7xl font-bold mb-6 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 dark:from-white dark:via-slate-200 dark:to-white bg-clip-text text-transparent">
+          <h1 className="text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-bold mb-4 sm:mb-6 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 dark:from-white dark:via-slate-200 dark:to-white bg-clip-text text-transparent leading-tight">
             AI-Powered GitHub
-            <br />
+            <br className="hidden sm:block" />
+            <span className="sm:hidden"> </span>
             Repository Analysis
           </h1>
-          <p className="text-xl text-slate-600 dark:text-slate-400 mb-8 max-w-2xl mx-auto leading-relaxed">
+          <p className="text-base sm:text-lg md:text-xl text-slate-600 dark:text-slate-400 mb-6 sm:mb-8 max-w-2xl mx-auto leading-relaxed px-2">
             Transform your engineering management with intelligent code analysis.
             Identify tech debt, security vulnerabilities, and performance bottlenecks
             before they impact your team.
           </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center items-center px-4">
             <ClerkWrapper fallback={
-              <Link href="/dashboard">
-                <Button size="lg" className="text-lg px-8 py-6">
+              <Link href="/dashboard" className="w-full sm:w-auto">
+                <Button size="lg" className="w-full sm:w-auto text-base sm:text-lg px-6 sm:px-8 py-5 sm:py-6">
                   Go to Dashboard
-                  <ArrowRight className="ml-2 w-5 h-5" />
+                  <ArrowRight className="ml-2 w-4 h-4 sm:w-5 sm:h-5" />
                 </Button>
               </Link>
             }>
               <SignedOut>
                 <SignInButton mode="modal">
-                  <Button size="lg" className="text-lg px-8 py-6">
+                  <Button size="lg" className="w-full sm:w-auto text-base sm:text-lg px-6 sm:px-8 py-5 sm:py-6">
                     Start Free Analysis
-                    <ArrowRight className="ml-2 w-5 h-5" />
+                    <ArrowRight className="ml-2 w-4 h-4 sm:w-5 sm:h-5" />
                   </Button>
                 </SignInButton>
               </SignedOut>
               <SignedIn>
-                <Link href="/dashboard">
-                  <Button size="lg" className="text-lg px-8 py-6">
+                <Link href="/dashboard" className="w-full sm:w-auto">
+                  <Button size="lg" className="w-full sm:w-auto text-base sm:text-lg px-6 sm:px-8 py-5 sm:py-6">
                     Go to Dashboard
-                    <ArrowRight className="ml-2 w-5 h-5" />
+                    <ArrowRight className="ml-2 w-4 h-4 sm:w-5 sm:h-5" />
                   </Button>
                 </Link>
               </SignedIn>
             </ClerkWrapper>
-            <Button variant="outline" size="lg" className="text-lg px-8 py-6">
-              Watch Demo
+            <Button variant="outline" size="lg" className="w-full sm:w-auto text-base sm:text-lg px-6 sm:px-8 py-5 sm:py-6" asChild>
+              <a href="https://github.com/bambusoe02/codesentinel" target="_blank" rel="noopener noreferrer">
+                View on GitHub
+              </a>
             </Button>
           </div>
         </div>
       </section>
 
       {/* Features Grid */}
-      <section className="container mx-auto px-4 py-20">
-        <div className="text-center mb-16">
-          <h2 className="text-3xl md:text-4xl font-bold mb-4">
+      <section className="container mx-auto px-4 sm:px-6 py-12 sm:py-20">
+        <div className="text-center mb-8 sm:mb-16">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-3 sm:mb-4">
             Everything You Need to Analyze Code Quality
           </h2>
-          <p className="text-lg text-slate-600 dark:text-slate-400 max-w-2xl mx-auto">
+          <p className="text-base sm:text-lg text-slate-600 dark:text-slate-400 max-w-2xl mx-auto px-2">
             From real-time metrics to actionable insights, CodeSentinel gives you
             the complete picture of your repository health.
           </p>
@@ -234,16 +235,16 @@ export default function Home() {
       </section>
 
       {/* Features Section */}
-      <section className="bg-slate-900 dark:bg-black py-20">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold text-white mb-4">Demo Features</h2>
-            <p className="text-slate-400 max-w-2xl mx-auto">
-              Explore the capabilities of AI-powered code analysis with our interactive demo.
+      <section className="bg-slate-900 dark:bg-black py-12 sm:py-20">
+        <div className="container mx-auto px-4 sm:px-6">
+          <div className="text-center mb-8 sm:mb-12">
+            <h2 className="text-2xl sm:text-3xl font-bold text-white mb-3 sm:mb-4">Key Features</h2>
+            <p className="text-sm sm:text-base text-slate-400 max-w-2xl mx-auto px-2">
+              Explore the capabilities of AI-powered code analysis.
               See how CodeSentinel can help analyze and improve your codebase quality.
             </p>
           </div>
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8 text-center">
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8 text-center">
             <div>
               <div className="w-12 h-12 bg-blue-600 rounded-lg flex items-center justify-center mx-auto mb-4">
                 <Shield className="w-6 h-6 text-white" />
@@ -277,16 +278,16 @@ export default function Home() {
       </section>
 
       {/* CTA Section */}
-      <section className="container mx-auto px-4 py-20 text-center">
+      <section className="container mx-auto px-4 sm:px-6 py-12 sm:py-20 text-center">
         <div className="max-w-2xl mx-auto">
-          <h2 className="text-3xl md:text-4xl font-bold mb-6">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-4 sm:mb-6">
             Ready to Transform Your Code Quality?
           </h2>
-          <p className="text-lg text-slate-600 dark:text-slate-400 mb-8">
+          <p className="text-base sm:text-lg text-slate-600 dark:text-slate-400 mb-6 sm:mb-8 px-2">
             Join leading engineering teams who trust CodeSentinel to maintain
             high-quality, secure, and performant codebases.
           </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center px-4">
             <ClerkWrapper fallback={
               <Link href="/dashboard">
                 <Button size="lg" className="text-lg px-8 py-6">
@@ -297,37 +298,37 @@ export default function Home() {
             }>
               <SignedOut>
                 <SignInButton mode="modal">
-                  <Button size="lg" className="text-lg px-8 py-6">
+                  <Button size="lg" className="w-full sm:w-auto text-base sm:text-lg px-6 sm:px-8 py-5 sm:py-6">
                     Start Your First Analysis
-                    <Github className="ml-2 w-5 h-5" />
+                    <Github className="ml-2 w-4 h-4 sm:w-5 sm:h-5" />
                   </Button>
                 </SignInButton>
               </SignedOut>
               <SignedIn>
-                <Link href="/dashboard">
-                  <Button size="lg" className="text-lg px-8 py-6">
+                <Link href="/dashboard" className="w-full sm:w-auto">
+                  <Button size="lg" className="w-full sm:w-auto text-base sm:text-lg px-6 sm:px-8 py-5 sm:py-6">
                     Go to Dashboard
-                    <ArrowRight className="ml-2 w-5 h-5" />
+                    <ArrowRight className="ml-2 w-4 h-4 sm:w-5 sm:h-5" />
                   </Button>
                 </Link>
               </SignedIn>
             </ClerkWrapper>
           </div>
           <p className="text-sm text-slate-500 mt-4">
-            Interactive demo with sample data. Try the analysis features.
+            Get started with real-time code analysis. Connect your GitHub repositories and start analyzing.
           </p>
         </div>
       </section>
 
       {/* Footer */}
       <footer className="border-t bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm">
-        <div className="container mx-auto px-4 py-8">
-          <div className="flex items-center justify-center space-x-2">
+        <div className="container mx-auto px-4 sm:px-6 py-6 sm:py-8">
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-0 sm:space-x-2">
             <div className="w-6 h-6 bg-gradient-to-r from-blue-600 to-purple-600 rounded flex items-center justify-center">
               <Code className="w-4 h-4 text-white" />
             </div>
-            <span className="font-semibold">CodeSentinel</span>
-            <span className="text-slate-500">© 2026</span>
+            <span className="font-semibold text-sm sm:text-base">CodeSentinel</span>
+            <span className="text-slate-500 text-xs sm:text-sm">© 2026</span>
           </div>
         </div>
       </footer>

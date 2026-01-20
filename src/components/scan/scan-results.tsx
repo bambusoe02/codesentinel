@@ -1,6 +1,5 @@
 'use client';
 
-import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
@@ -8,6 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/ui/skeleton';
 import { CodeHighlights } from './code-highlights';
 import { TrendsChart } from '@/components/charts/trends-chart';
+import { AnalysisIssue } from '@/lib/analyzer';
 import {
   AlertTriangle,
   Shield,
@@ -113,10 +113,10 @@ export function ScanResults({ repoName }: ScanResultsProps) {
 
   // Group issues by type
   const issuesByType = {
-    security: issues.filter((i: any) => i.type === 'security'),
-    performance: issues.filter((i: any) => i.type === 'performance'),
-    maintainability: issues.filter((i: any) => i.type === 'maintainability'),
-    reliability: issues.filter((i: any) => i.type === 'reliability'),
+    security: issues.filter((i: AnalysisIssue) => i.type === 'security'),
+    performance: issues.filter((i: AnalysisIssue) => i.type === 'performance'),
+    maintainability: issues.filter((i: AnalysisIssue) => i.type === 'maintainability'),
+    reliability: issues.filter((i: AnalysisIssue) => i.type === 'reliability'),
   };
 
   const categories = [
@@ -229,7 +229,7 @@ export function ScanResults({ repoName }: ScanResultsProps) {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {category.issues.map((issue: any, index: number) => (
+                  {category.issues.map((issue: AnalysisIssue, index: number) => (
                     <div key={index} className="border rounded-lg p-4">
                       <div className="flex items-start justify-between mb-2">
                         <div className="flex items-center space-x-2">

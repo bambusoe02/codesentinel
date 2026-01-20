@@ -19,6 +19,7 @@ export interface GitHubRepository {
   private: boolean;
   updated_at: string | null;
   created_at: string | null;
+  topics?: string[]; // Repository topics/tags
 }
 
 export interface GitHubFile {

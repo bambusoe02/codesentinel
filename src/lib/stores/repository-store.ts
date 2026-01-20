@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 
-// Local type definitions (moved from schema.ts for demo mode)
+// Local type definitions for Zustand store
 interface Repository {
   id: string;
   name: string;

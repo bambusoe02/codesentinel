@@ -8,6 +8,7 @@ interface UIState {
 
   // Drawer states
   isSettingsDrawerOpen: boolean;
+  isMobileNavOpen: boolean;
 
   // Loading states
   isScanning: boolean;
@@ -33,6 +34,7 @@ interface UIState {
   setAnalysisModal: (open: boolean) => void;
   setShareModal: (open: boolean) => void;
   setSettingsDrawer: (open: boolean) => void;
+  setMobileNav: (open: boolean) => void;
   setScanning: (scanning: boolean) => void;
   setScanningProgress: (progress: number) => void;
   setScanningMessage: (message: string) => void;
@@ -55,6 +57,7 @@ export const useUIStore = create<UIState>((set) => ({
   isAnalysisModalOpen: false,
   isShareModalOpen: false,
   isSettingsDrawerOpen: false,
+  isMobileNavOpen: false,
   isScanning: false,
   scanningProgress: 0,
   scanningMessage: '',
@@ -65,6 +68,7 @@ export const useUIStore = create<UIState>((set) => ({
   setAnalysisModal: (isAnalysisModalOpen) => set({ isAnalysisModalOpen }),
   setShareModal: (isShareModalOpen) => set({ isShareModalOpen }),
   setSettingsDrawer: (isSettingsDrawerOpen) => set({ isSettingsDrawerOpen }),
+  setMobileNav: (isMobileNavOpen) => set({ isMobileNavOpen }),
   setScanning: (isScanning) => set({ isScanning }),
   setScanningProgress: (scanningProgress) => set({ scanningProgress }),
   setScanningMessage: (scanningMessage) => set({ scanningMessage }),

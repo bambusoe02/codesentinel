@@ -85,7 +85,6 @@ export default function RootLayout({
   
   return (
     <ClerkProviderWrapper 
-      isClerkAvailable={isClerkAvailable}
       publishableKey={publishableKey}
     >
       <html lang="en" suppressHydrationWarning>
