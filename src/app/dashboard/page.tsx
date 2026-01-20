@@ -16,9 +16,9 @@ export default function DashboardPage() {
     <div className="space-y-6">
       <UserSync />
       {/* Welcome Section */}
-      <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg p-6 text-white">
-        <h1 className="text-2xl font-bold mb-2">Welcome back!</h1>
-        <p className="text-blue-100">
+      <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg p-4 sm:p-6 text-white">
+        <h1 className="text-xl sm:text-2xl font-bold mb-2">Welcome back!</h1>
+        <p className="text-sm sm:text-base text-blue-100">
           Ready to analyze your repositories? Connect GitHub to get started with AI-powered code analysis.
         </p>
       </div>
@@ -32,13 +32,13 @@ export default function DashboardPage() {
       </Suspense>
 
       {/* Repository List & Recent Activity */}
-      <div className="grid lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2">
+      <div className="grid lg:grid-cols-3 gap-4 sm:gap-6">
+        <div id="repositories" className="lg:col-span-2">
           <Suspense fallback={<RepositoryListSkeleton />}>
             <RepositoryList />
           </Suspense>
         </div>
-        <div>
+        <div className="hidden lg:block">
           <Suspense fallback={<RecentActivitySkeleton />}>
             <RecentActivity />
           </Suspense>

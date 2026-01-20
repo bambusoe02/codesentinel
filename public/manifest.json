@@ -52,10 +52,10 @@
       ]
     },
     {
-      "name": "New Analysis",
-      "short_name": "Analyze",
-      "description": "Start a new repository analysis",
-      "url": "/dashboard/scan",
+      "name": "Settings",
+      "short_name": "Settings",
+      "description": "Configure GitHub integration and preferences",
+      "url": "/dashboard/settings",
       "icons": [
         {
           "src": "/icon-96x96.png",
