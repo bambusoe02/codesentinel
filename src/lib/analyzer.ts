@@ -14,7 +14,7 @@ export interface AnalysisResult {
 export interface AnalysisIssue {
   id: string;
   type: 'security' | 'performance' | 'maintainability' | 'reliability';
-  severity: 'critical' | 'high' | 'medium' | 'low' | 'info';
+  severity: 'critical' | 'high' | 'medium' | 'low';
   title: string;
   description: string;
   file?: string;
@@ -262,7 +262,7 @@ export class CodeAnalyzer {
           issues.push({
             id: `todo-${file.name}`,
             type: 'maintainability',
-            severity: 'info',
+            severity: 'low',
             title: 'TODO comments found',
             description: `Found ${todos.length} unresolved TODO comments`,
             file: file.name,
