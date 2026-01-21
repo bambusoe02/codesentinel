@@ -55,7 +55,7 @@ export async function POST(request: NextRequest) {
     try {
       encryptedToken = encrypt(githubToken);
     } catch (error) {
-      console.error('Error encrypting token:', error);
+      logger.error('Error encrypting token', error);
       return NextResponse.json(
         { error: 'Failed to encrypt token' },
         { status: 500 }
@@ -82,7 +82,7 @@ export async function POST(request: NextRequest) {
       user: safeUser,
     });
   } catch (error) {
-    console.error('Error saving GitHub token:', error);
+    logger.error('Error saving GitHub token', error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
@@ -123,7 +123,7 @@ export async function GET() {
       githubUsername: user.githubUsername,
     });
   } catch (error) {
-    console.error('Error fetching GitHub token status:', error);
+    logger.error('Error fetching GitHub token status', error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

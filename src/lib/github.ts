@@ -1,5 +1,6 @@
 import { Octokit } from '@octokit/rest';
 import { graphql } from '@octokit/graphql';
+import { logger } from './logger';
 
 // Types
 export interface GitHubRepository {
@@ -95,7 +96,7 @@ export class GitHubClient {
 
       return response.data as GitHubRepository[];
     } catch (error) {
-      console.error('Error fetching repositories:', error);
+      logger.error('Error fetching repositories', error);
       throw new Error('Failed to fetch repositories');
     }
   }
@@ -110,7 +111,7 @@ export class GitHubClient {
 
       return response.data;
     } catch (error) {
-      console.error('Error fetching repository:', error);
+      logger.error('Error fetching repository', error);
       throw new Error('Failed to fetch repository details');
     }
   }
@@ -147,7 +148,7 @@ export class GitHubClient {
         content: item.content ? Buffer.from(item.content, 'base64').toString() : undefined,
       }));
     } catch (error) {
-      console.error('Error fetching repository contents:', error);
+      logger.error('Error fetching repository contents', error);
       throw new Error('Failed to fetch repository contents');
     }
   }
@@ -171,7 +172,7 @@ export class GitHubClient {
 
       return response.data as GitHubCommit[];
     } catch (error) {
-      console.error('Error fetching commits:', error);
+      logger.error('Error fetching commits', error);
       throw new Error('Failed to fetch repository commits');
     }
   }
@@ -186,7 +187,7 @@ export class GitHubClient {
 
       return response.data as GitHubLanguageStats;
     } catch (error) {
-      console.error('Error fetching languages:', error);
+      logger.error('Error fetching languages', error);
       throw new Error('Failed to fetch repository languages');
     }
   }
@@ -214,7 +215,7 @@ export class GitHubClient {
         contributions: number;
       }>;
     } catch (error) {
-      console.error('Error fetching contributors:', error);
+      logger.error('Error fetching contributors', error);
       throw new Error('Failed to fetch repository contributors');
     }
   }
@@ -250,7 +251,7 @@ export class GitHubClient {
         commitFrequency,
       };
     } catch (error) {
-      console.error('Error calculating repository stats:', error);
+      logger.error('Error calculating repository stats', error);
       throw new Error('Failed to calculate repository statistics');
     }
   }
@@ -266,7 +267,7 @@ export class GitHubClient {
 
       return response.data.items as GitHubRepository[];
     } catch (error) {
-      console.error('Error searching repositories:', error);
+      logger.error('Error searching repositories', error);
       throw new Error('Failed to search repositories');
     }
   }
@@ -358,7 +359,7 @@ export class GitHubClient {
 
       return response.repository;
     } catch (error) {
-      console.error('Error fetching advanced repository data:', error);
+      logger.error('Error fetching advanced repository data', error);
       throw new Error('Failed to fetch advanced repository data');
     }
   }

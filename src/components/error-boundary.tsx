@@ -34,6 +34,7 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
     }
     // Logging is intentional here for error tracking
     // eslint-disable-next-line no-console
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     console.error('ErrorBoundary caught an error:', error, errorInfo);
   }
 

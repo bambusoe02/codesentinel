@@ -28,21 +28,21 @@ class Logger {
 
   log(message: string, context?: LogContext): void {
     if (this.shouldLog('log')) {
-      // eslint-disable-next-line no-console
+       
       console.log(this.formatMessage(message, context));
     }
   }
 
   info(message: string, context?: LogContext): void {
     if (this.shouldLog('info')) {
-      // eslint-disable-next-line no-console
+       
       console.info(this.formatMessage(message, context));
     }
   }
 
   warn(message: string, context?: LogContext): void {
     if (this.shouldLog('warn')) {
-      // eslint-disable-next-line no-console
+       
       console.warn(this.formatMessage(message, context));
     }
   }
@@ -56,7 +56,7 @@ class Logger {
         stack: error instanceof Error ? error.stack : undefined,
       };
       
-      // eslint-disable-next-line no-console
+       
       console.error(this.formatMessage(message, errorContext));
       
       // In production, send to error monitoring service
@@ -69,7 +69,7 @@ class Logger {
 
   debug(message: string, context?: LogContext): void {
     if (this.shouldLog('debug')) {
-      // eslint-disable-next-line no-console
+       
       console.debug(this.formatMessage(message, context));
     }
   }

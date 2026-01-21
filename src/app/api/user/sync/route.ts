@@ -4,6 +4,7 @@ import { users } from '@/lib/schema';
 import { eq } from 'drizzle-orm';
 import { NextResponse } from 'next/server';
 import { encrypt, isEncryptionConfigured } from '@/lib/encryption';
+import { logger } from '@/lib/logger';
 
 export async function POST() {
   try {
@@ -51,13 +52,13 @@ export async function POST() {
         if (githubToken) {
           // Encrypt token before storing
           encryptedGitHubToken = encrypt(githubToken);
-          console.log('✅ Successfully retrieved and encrypted GitHub token from Clerk');
+          logger.info('Successfully retrieved and encrypted GitHub token from Clerk');
         }
       }
     } catch (error) {
       // Token might not be available (e.g., user didn't sign in via GitHub OAuth)
       // This is not critical - user can still add token manually in Settings
-      console.warn('⚠️  Could not retrieve GitHub OAuth token from Clerk:', error);
+      logger.warn('Could not retrieve GitHub OAuth token from Clerk', { error });
     }
 
     // Check if user exists in database
@@ -116,7 +117,7 @@ export async function POST() {
 
     return NextResponse.json({ success: true, user: newUser });
   } catch (error) {
-    console.error('Error syncing user:', error);
+    logger.error('Error syncing user', error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

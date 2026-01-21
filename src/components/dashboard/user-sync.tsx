@@ -13,8 +13,8 @@ export function UserSync() {
             'Content-Type': 'application/json',
           },
         });
-      } catch (error) {
-        console.error('Failed to sync user:', error);
+      } catch {
+        // Silent fail - user sync is non-critical
       }
     };
 

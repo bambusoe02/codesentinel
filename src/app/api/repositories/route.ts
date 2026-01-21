@@ -5,6 +5,7 @@ import { eq, desc } from 'drizzle-orm';
 import { NextResponse } from 'next/server';
 import { GitHubClient, type GitHubRepository } from '@/lib/github';
 import { decrypt } from '@/lib/encryption';
+import { logger } from '@/lib/logger';
 
 export async function GET() {
   try {
@@ -47,7 +48,7 @@ export async function GET() {
         // If decryption fails, token might be plain text or corrupted
         // Try using it as-is (for backward compatibility with non-encrypted tokens)
         githubToken = user.githubToken;
-        console.warn('Failed to decrypt token, using as plain text:', error);
+        logger.warn('Failed to decrypt token, using as plain text', { error });
       }
     } else {
       // Fallback to environment token (for backward compatibility)
@@ -164,7 +165,7 @@ export async function GET() {
 
     return NextResponse.json({ repositories: syncedRepos });
   } catch (error) {
-    console.error('Error fetching repositories:', error);
+    logger.error('Error fetching repositories', error);
     
     // Fallback to database cache
     try {
@@ -209,7 +210,7 @@ export async function GET() {
         }
       }
     } catch (fallbackError) {
-      console.error('Fallback error:', fallbackError);
+      logger.error('Fallback error', fallbackError);
     }
 
     return NextResponse.json(

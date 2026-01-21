@@ -83,7 +83,7 @@ export function ScanProgress({ repoName, onComplete }: ScanProgressProps) {
           onComplete();
         }
       } catch (err) {
-        console.error('Scan error:', err);
+        // Error is handled by mutation onError handler
         setError(err instanceof Error ? err.message : 'Unknown error occurred');
         setIsComplete(true);
         }

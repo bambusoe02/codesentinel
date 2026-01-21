@@ -1,4 +1,5 @@
 import crypto from 'crypto';
+import { logger } from './logger';
 
 // Encryption key from environment variable
 // Generate with: openssl rand -base64 32
@@ -48,7 +49,7 @@ export function encrypt(text: string): string {
 
     return combined.toString('base64');
   } catch (error) {
-    console.error('Encryption error:', error);
+    logger.error('Encryption error', error);
     throw new Error('Failed to encrypt data');
   }
 }
@@ -86,7 +87,7 @@ export function decrypt(encryptedData: string): string {
 
     return decrypted.toString('utf8');
   } catch (error) {
-    console.error('Decryption error:', error);
+    logger.error('Decryption error', error);
     throw new Error('Failed to decrypt data');
   }
 }

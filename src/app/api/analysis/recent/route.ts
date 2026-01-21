@@ -3,6 +3,7 @@ import { db } from '@/lib/db';
 import { users, analysisReports, repositories } from '@/lib/schema';
 import { eq, desc } from 'drizzle-orm';
 import { NextResponse } from 'next/server';
+import { logger } from '@/lib/logger';
 
 export async function GET() {
   try {
@@ -49,7 +50,7 @@ export async function GET() {
 
     return NextResponse.json({ activities: reports });
   } catch (error) {
-    console.error('Error fetching recent activity:', error);
+    logger.error('Error fetching recent activity', error);
     return NextResponse.json(
       { error: 'Failed to fetch recent activity' },
       { status: 500 }
