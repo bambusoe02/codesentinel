@@ -2,6 +2,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -94,13 +95,10 @@ export function ScanResults({ repoName }: ScanResultsProps) {
             <p className="text-muted-foreground mb-4">
               Start an analysis to see results here.
             </p>
-            <button
-              onClick={() => refetch()}
-              className="inline-flex items-center px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
-            >
+            <Button onClick={() => refetch()}>
               <RefreshCw className="w-4 h-4 mr-2" />
               Refresh
-            </button>
+            </Button>
           </div>
         </CardContent>
       </Card>

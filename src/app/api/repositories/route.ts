@@ -22,8 +22,11 @@ export async function GET() {
       );
     }
 
+    // Store db in local variable for TypeScript narrow type checking
+    const database = db;
+
     // Get user from database
-    const [user] = await db
+    const [user] = await database
       .select()
       .from(users)
       .where(eq(users.clerkId, userId))
@@ -53,7 +56,7 @@ export async function GET() {
 
     if (!githubToken) {
       // Return cached repositories from database
-      const cachedRepos = await db
+      const cachedRepos = await database
         .select()
         .from(repositories)
         .where(eq(repositories.userId, user.id));
@@ -71,7 +74,7 @@ export async function GET() {
     // Sync with database
     const syncedRepos = await Promise.all(
       githubRepos.map(async (repo: GitHubRepository) => {
-        const [existing] = await db
+        const [existing] = await database
           .select()
           .from(repositories)
           .where(eq(repositories.fullName, repo.full_name))
@@ -79,13 +82,13 @@ export async function GET() {
 
         if (existing) {
           // Update existing
-          const [updated] = await db
+          const [updated] = await database
             .update(repositories)
             .set({
               name: repo.name,
               description: repo.description || null,
               htmlUrl: repo.html_url,
-              owner: repo.owner,
+              owner: repo.owner as { login: string; avatar_url?: string },
               stargazersCount: repo.stargazers_count,
               language: repo.language || null,
               topics: repo.topics || [],
@@ -97,7 +100,7 @@ export async function GET() {
           return updated;
         } else {
           // Create new
-          const [created] = await db
+          const [created] = await database
             .insert(repositories)
             .values({
               userId: user.id,
@@ -105,7 +108,7 @@ export async function GET() {
               fullName: repo.full_name,
               description: repo.description || null,
               htmlUrl: repo.html_url,
-              owner: repo.owner,
+              owner: repo.owner as { login: string; avatar_url?: string },
               stargazersCount: repo.stargazers_count,
               language: repo.language || null,
               topics: repo.topics || [],
@@ -124,7 +127,7 @@ export async function GET() {
     // Fallback to database cache
     try {
       const { userId } = await auth();
-      if (userId) {
+      if (userId && db) {
         const [user] = await db
           .select()
           .from(users)

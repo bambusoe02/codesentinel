@@ -67,7 +67,7 @@ export function ScanProgress({ repoName, onComplete }: ScanProgressProps) {
         // Simulate progress during analysis
         const steps = scanSteps.length;
         for (let i = 0; i < steps; i++) {
-          setCurrentStep(i);
+        setCurrentStep(i);
           const stepProgress = ((i + 1) / steps) * 90; // Reserve 10% for completion
           setProgress(stepProgress);
           
@@ -86,7 +86,7 @@ export function ScanProgress({ repoName, onComplete }: ScanProgressProps) {
         console.error('Scan error:', err);
         setError(err instanceof Error ? err.message : 'Unknown error occurred');
         setIsComplete(true);
-      }
+        }
     };
 
     // Check if analysis already exists
@@ -94,8 +94,8 @@ export function ScanProgress({ repoName, onComplete }: ScanProgressProps) {
       try {
         const response = await fetch(`/api/repositories/${encodeURIComponent(repoName)}/results`);
         if (response.ok) {
-          setIsComplete(true);
-          setProgress(100);
+      setIsComplete(true);
+      setProgress(100);
           if (onComplete) {
             onComplete();
           }

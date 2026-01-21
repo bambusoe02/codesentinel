@@ -16,7 +16,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
               if (error && typeof error === 'object' && 'status' in error) {
                 const status = (error as { status: number }).status;
                 if (status >= 400 && status < 500) {
-                  return false;
+                return false;
                 }
               }
               return failureCount < 3;

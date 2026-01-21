@@ -49,14 +49,14 @@ const nextConfig: NextConfig = {
       if (process.env.NODE_ENV === 'production') {
         try {
           // eslint-disable-next-line @typescript-eslint/no-require-imports
-          const { BundleAnalyzerPlugin } = require('webpack-bundle-analyzer');
-          config.plugins.push(
-            new BundleAnalyzerPlugin({
-              analyzerMode: 'static',
-              openAnalyzer: false,
-              reportFilename: './analyze/client.html',
-            })
-          );
+        const { BundleAnalyzerPlugin } = require('webpack-bundle-analyzer');
+        config.plugins.push(
+          new BundleAnalyzerPlugin({
+            analyzerMode: 'static',
+            openAnalyzer: false,
+            reportFilename: './analyze/client.html',
+          })
+        );
         } catch (error) {
           console.warn('Bundle analyzer not available:', error);
         }

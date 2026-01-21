@@ -8,6 +8,13 @@ interface AnalysisIssue {
   severity: 'low' | 'medium' | 'high' | 'critical';
   title: string;
   description?: string;
+  file?: string;
+  line?: number;
+  code?: string;
+  impact?: string;
+  fix?: string;
+  effort?: 'low' | 'medium' | 'high';
+  tags?: string[];
 }
 
 interface Recommendation {
@@ -17,6 +24,7 @@ interface Recommendation {
   description: string;
   priority: number;
   impact: string;
+  effort?: string;
 }
 
 // Users table (linked to Clerk)
@@ -40,7 +48,7 @@ export const repositories = pgTable('repositories', {
   fullName: text('full_name').notNull(),
   description: text('description'),
   htmlUrl: text('html_url').notNull(),
-  owner: jsonb('owner').notNull(),
+  owner: jsonb('owner').$type<{ login: string; avatar_url?: string }>().notNull(),
   stargazersCount: integer('stargazers_count').default(0),
   language: text('language'),
   topics: jsonb('topics').$type<string[]>(),
