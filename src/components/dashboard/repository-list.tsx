@@ -1,5 +1,7 @@
 'use client';
 
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -12,8 +14,11 @@ import {
   AlertCircle,
   ExternalLink,
   RefreshCw,
+  CheckCircle2,
+  Loader2,
 } from 'lucide-react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { formatDistanceToNow } from 'date-fns';
 
 interface Repository {
   id: string;
@@ -28,6 +33,12 @@ interface Repository {
     avatar_url?: string;
   };
   topics?: string[];
+  latestAnalysis?: {
+    id: string;
+    overallScore: number;
+    createdAt: string;
+    issues: Array<{ severity: string }> | null;
+  } | null;
 }
 
 async function fetchRepositories(): Promise<Repository[]> {
@@ -39,11 +50,54 @@ async function fetchRepositories(): Promise<Repository[]> {
   return data.repositories || [];
 }
 
+function getScoreBadgeVariant(score: number): "default" | "secondary" | "destructive" | "outline" {
+  if (score >= 80) return 'default';
+  if (score >= 60) return 'secondary';
+  return 'destructive';
+}
+
+function getScoreColor(score: number): string {
+  if (score >= 80) return 'text-green-600';
+  if (score >= 60) return 'text-yellow-600';
+  return 'text-red-600';
+}
+
 export function RepositoryList() {
+  const router = useRouter();
+  const queryClient = useQueryClient();
+  const [analyzingRepo, setAnalyzingRepo] = useState<string | null>(null);
+
   const { data: repositories = [], isLoading, error, refetch } = useQuery({
     queryKey: ['repositories'],
     queryFn: fetchRepositories,
   });
+
+  const analyzeMutation = useMutation({
+    mutationFn: async (repoFullName: string) => {
+      const response = await fetch(`/api/repositories/${encodeURIComponent(repoFullName)}/analyze`, {
+        method: 'POST',
+      });
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to start analysis');
+      }
+      return response.json();
+    },
+    onSuccess: (data, repoFullName) => {
+      queryClient.invalidateQueries({ queryKey: ['repositories'] });
+      queryClient.invalidateQueries({ queryKey: ['analysis-results', repoFullName] });
+      queryClient.invalidateQueries({ queryKey: ['recent-activity'] });
+      router.push(`/scan/${encodeURIComponent(repoFullName)}`);
+    },
+    onError: () => {
+      setAnalyzingRepo(null);
+    },
+  });
+
+  const handleAnalyze = (repoFullName: string) => {
+    setAnalyzingRepo(repoFullName);
+    analyzeMutation.mutate(repoFullName);
+  };
   if (isLoading) {
     return (
       <Card>
@@ -133,15 +187,57 @@ export function RepositoryList() {
                       <Star className="w-3 h-3 mr-1" />
                       {repo.stargazersCount || 0}
                     </span>
+                    {repo.latestAnalysis && (
+                      <span className="flex items-center">
+                        <CheckCircle2 className="w-3 h-3 mr-1 text-green-600" />
+                        Analyzed {formatDistanceToNow(new Date(repo.latestAnalysis.createdAt), { addSuffix: true })}
+                      </span>
+                    )}
                   </div>
                 </div>
               </div>
               <div className="flex items-center space-x-2 sm:flex-col sm:space-y-2 sm:space-x-0">
-                <Link href={`/scan/${encodeURIComponent(repo.fullName)}`} className="flex-1 sm:flex-none">
-                  <Button size="sm" variant="outline" className="w-full sm:w-auto">
-                    Analyze
-                  </Button>
-                </Link>
+                {repo.latestAnalysis && (
+                  <div className="flex items-center space-x-2 mb-2">
+                    <Badge 
+                      variant={getScoreBadgeVariant(repo.latestAnalysis.overallScore)}
+                      className={`text-xs ${getScoreColor(repo.latestAnalysis.overallScore)}`}
+                    >
+                      Score: {repo.latestAnalysis.overallScore}/100
+                    </Badge>
+                    {repo.latestAnalysis.issues && repo.latestAnalysis.issues.length > 0 && (
+                      <Badge variant="outline" className="text-xs">
+                        {repo.latestAnalysis.issues.length} issue{repo.latestAnalysis.issues.length !== 1 ? 's' : ''}
+                      </Badge>
+                    )}
+                  </div>
+                )}
+                <div className="flex gap-2 w-full sm:w-auto">
+                  {analyzingRepo === repo.fullName ? (
+                    <Button size="sm" variant="outline" disabled className="w-full sm:w-auto">
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Analyzing...
+                    </Button>
+                  ) : (
+                    <>
+                      <Button 
+                        size="sm" 
+                        variant={repo.latestAnalysis ? "secondary" : "default"}
+                        className="flex-1 sm:flex-none"
+                        onClick={() => handleAnalyze(repo.fullName)}
+                      >
+                        {repo.latestAnalysis ? 'Re-analyze' : 'Analyze'}
+                      </Button>
+                      {repo.latestAnalysis && (
+                        <Link href={`/scan/${encodeURIComponent(repo.fullName)}`}>
+                          <Button size="sm" variant="outline" className="flex-1 sm:flex-none">
+                            View Results
+                          </Button>
+                        </Link>
+                      )}
+                    </>
+                  )}
+                </div>
                 <Button 
                   size="sm" 
                   variant="ghost"

@@ -7,13 +7,17 @@ import { Skeleton } from '@/components/ui/skeleton';
 import {
   Github,
   Code,
-  FileText,
-  AlertTriangle,
+  BarChart3,
+  CheckCircle2,
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 
 interface Repository {
   stargazersCount: number;
+  latestAnalysis?: {
+    overallScore: number;
+    issues: Array<unknown> | null;
+  } | null;
 }
 
 async function fetchRepositories(): Promise<Repository[]> {
@@ -35,6 +39,21 @@ export function MetricsGrid() {
     const totalRepos = repositories.length;
     const totalStars = repositories.reduce((sum: number, repo: Repository) => sum + (repo.stargazersCount || 0), 0);
     
+    // Calculate analysis metrics
+    const analyzedRepos = repositories.filter((repo: Repository) => repo.latestAnalysis);
+    const totalAnalyses = analyzedRepos.length;
+    const avgScore = analyzedRepos.length > 0
+      ? Math.round(
+          analyzedRepos.reduce((sum: number, repo: Repository) => 
+            sum + (repo.latestAnalysis?.overallScore || 0), 0
+          ) / analyzedRepos.length
+        )
+      : 0;
+    const totalIssues = analyzedRepos.reduce((sum: number, repo: Repository) => {
+      const issues = repo.latestAnalysis?.issues;
+      return sum + (Array.isArray(issues) ? issues.length : 0);
+    }, 0);
+    
     return [
       {
         title: 'Total Repositories',
@@ -53,20 +72,20 @@ export function MetricsGrid() {
         description: 'Across all repositories',
       },
       {
-        title: 'Repositories',
-        value: totalRepos.toString(),
-        change: '',
+        title: 'Analyses Completed',
+        value: totalAnalyses.toString(),
+        change: `${totalRepos > 0 ? Math.round((totalAnalyses / totalRepos) * 100) : 0}%`,
         changeType: 'neutral' as const,
-        icon: FileText,
-        description: 'Available for analysis',
+        icon: CheckCircle2,
+        description: `${totalRepos - totalAnalyses} remaining`,
       },
       {
-        title: 'Ready to Analyze',
-        value: totalRepos.toString(),
-        change: '',
-        changeType: 'neutral' as const,
-        icon: AlertTriangle,
-        description: 'Click analyze to start',
+        title: 'Average Score',
+        value: avgScore > 0 ? `${avgScore}/100` : 'N/A',
+        change: totalIssues > 0 ? `${totalIssues} issues` : '',
+        changeType: avgScore >= 80 ? 'positive' as const : avgScore >= 60 ? 'neutral' as const : 'negative' as const,
+        icon: BarChart3,
+        description: avgScore > 0 ? 'Health score' : 'No analyses yet',
       },
     ];
   }, [repositories]);

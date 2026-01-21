@@ -1,7 +1,7 @@
 import { auth } from '@clerk/nextjs/server';
 import { db } from '@/lib/db';
-import { users, repositories } from '@/lib/schema';
-import { eq } from 'drizzle-orm';
+import { users, repositories, analysisReports } from '@/lib/schema';
+import { eq, desc } from 'drizzle-orm';
 import { NextResponse } from 'next/server';
 import { GitHubClient, type GitHubRepository } from '@/lib/github';
 import { decrypt } from '@/lib/encryption';
@@ -54,15 +54,38 @@ export async function GET() {
       githubToken = process.env.GITHUB_TOKEN || null;
     }
 
-    if (!githubToken) {
-      // Return cached repositories from database
-      const cachedRepos = await database
-        .select()
-        .from(repositories)
-        .where(eq(repositories.userId, user.id));
+    // Get latest analysis for each repository
+    const allRepos = await database
+      .select()
+      .from(repositories)
+      .where(eq(repositories.userId, user.id));
 
+    // Get latest analysis for each repo
+    const reposWithAnalysis = await Promise.all(
+      allRepos.map(async (repo) => {
+        const [latestAnalysis] = await database
+          .select({
+            id: analysisReports.id,
+            overallScore: analysisReports.overallScore,
+            createdAt: analysisReports.createdAt,
+            issues: analysisReports.issues,
+          })
+          .from(analysisReports)
+          .where(eq(analysisReports.repositoryId, repo.id))
+          .orderBy(desc(analysisReports.createdAt))
+          .limit(1);
+
+        return {
+          ...repo,
+          latestAnalysis: latestAnalysis || null,
+        };
+      })
+    );
+
+    if (!githubToken) {
+      // Return cached repositories from database with analysis info
       return NextResponse.json({ 
-        repositories: cachedRepos,
+        repositories: reposWithAnalysis,
         message: 'No GitHub token configured. Sign in with GitHub OAuth or add your token in Settings.'
       });
     }
@@ -80,6 +103,7 @@ export async function GET() {
           .where(eq(repositories.fullName, repo.full_name))
           .limit(1);
 
+        let repoRecord;
         if (existing) {
           // Update existing
           const [updated] = await database
@@ -97,7 +121,7 @@ export async function GET() {
             .where(eq(repositories.id, existing.id))
             .returning();
 
-          return updated;
+          repoRecord = updated;
         } else {
           // Create new
           const [created] = await database
@@ -115,8 +139,26 @@ export async function GET() {
             })
             .returning();
 
-          return created;
+          repoRecord = created;
         }
+
+        // Get latest analysis for this repo
+        const [latestAnalysis] = await database
+          .select({
+            id: analysisReports.id,
+            overallScore: analysisReports.overallScore,
+            createdAt: analysisReports.createdAt,
+            issues: analysisReports.issues,
+          })
+          .from(analysisReports)
+          .where(eq(analysisReports.repositoryId, repoRecord.id))
+          .orderBy(desc(analysisReports.createdAt))
+          .limit(1);
+
+        return {
+          ...repoRecord,
+          latestAnalysis: latestAnalysis || null,
+        };
       })
     );
 
@@ -128,19 +170,42 @@ export async function GET() {
     try {
       const { userId } = await auth();
       if (userId && db) {
-        const [user] = await db
+        const database = db; // Local variable for TypeScript narrow type checking
+        const [user] = await database
           .select()
           .from(users)
           .where(eq(users.clerkId, userId))
           .limit(1);
 
         if (user) {
-          const cachedRepos = await db
+          const cachedRepos = await database
             .select()
             .from(repositories)
             .where(eq(repositories.userId, user.id));
 
-          return NextResponse.json({ repositories: cachedRepos });
+          // Get latest analysis for each repo
+          const reposWithAnalysis = await Promise.all(
+            cachedRepos.map(async (repo) => {
+              const [latestAnalysis] = await database
+                .select({
+                  id: analysisReports.id,
+                  overallScore: analysisReports.overallScore,
+                  createdAt: analysisReports.createdAt,
+                  issues: analysisReports.issues,
+                })
+                .from(analysisReports)
+                .where(eq(analysisReports.repositoryId, repo.id))
+                .orderBy(desc(analysisReports.createdAt))
+                .limit(1);
+
+              return {
+                ...repo,
+                latestAnalysis: latestAnalysis || null,
+              };
+            })
+          );
+
+          return NextResponse.json({ repositories: reposWithAnalysis });
         }
       }
     } catch (fallbackError) {
