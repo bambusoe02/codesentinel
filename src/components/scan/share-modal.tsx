@@ -14,6 +14,8 @@ import {
   Mail,
   Twitter,
   Linkedin,
+  Code,
+  Slack,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -26,6 +28,8 @@ interface ShareModalProps {
 export function ShareModal({ isOpen, onClose, repoName }: ShareModalProps) {
   const [shareLink, setShareLink] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
+  const [shareToken, setShareToken] = useState<string>('');
+  const [owner, repo] = repoName.split('/');
 
   // Generate shareable link (mock implementation)
   const generateShareLink = async () => {
@@ -36,6 +40,7 @@ export function ShareModal({ isOpen, onClose, repoName }: ShareModalProps) {
     const mockToken = Math.random().toString(36).substring(2, 15);
     const link = `${window.location.origin}/shared/${mockToken}`;
     setShareLink(link);
+    setShareToken(mockToken);
     setIsGenerating(false);
     toast.success('Shareable link generated!');
   };
@@ -60,6 +65,18 @@ export function ShareModal({ isOpen, onClose, repoName }: ShareModalProps) {
   const shareOnLinkedIn = () => {
     const url = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareLink)}`;
     window.open(url, '_blank');
+  };
+
+  const shareOnSlack = () => {
+    const text = `Check out the CodeSentinel analysis for ${repoName}! 🔍`;
+    const url = `https://slack.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(shareLink)}`;
+    window.open(url, '_blank');
+  };
+
+  const embedBadgeCode = `[![CodeSentinel](https://codesentinel.app/api/badge/${encodeURIComponent(owner)}/${encodeURIComponent(repo)})](https://codesentinel.app/scan/${encodeURIComponent(repoName)})`;
+
+  const copyEmbedCode = () => {
+    copyToClipboard(embedBadgeCode);
   };
 
   return (
@@ -121,6 +138,31 @@ export function ShareModal({ isOpen, onClose, repoName }: ShareModalProps) {
 
               <Separator />
 
+              {/* Embed Badge */}
+              <div className="space-y-2">
+                <Label className="text-sm font-medium flex items-center space-x-2">
+                  <Code className="w-4 h-4" />
+                  <span>Embed Badge</span>
+                </Label>
+                <div className="bg-muted p-3 rounded-lg font-mono text-xs overflow-x-auto">
+                  <code>{embedBadgeCode}</code>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={copyEmbedCode}
+                  className="w-full"
+                >
+                  <Copy className="w-4 h-4 mr-2" />
+                  Copy Embed Code
+                </Button>
+                <div className="text-xs text-muted-foreground">
+                  Add this badge to your README to display your CodeSentinel score
+                </div>
+              </div>
+
+              <Separator />
+
               {/* Share Options */}
               <div>
                 <Label className="text-sm font-medium">Share via</Label>
@@ -160,6 +202,15 @@ export function ShareModal({ isOpen, onClose, repoName }: ShareModalProps) {
                   >
                     <Linkedin className="w-4 h-4 mr-2" />
                     LinkedIn
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={shareOnSlack}
+                    className="justify-start"
+                  >
+                    <Slack className="w-4 h-4 mr-2" />
+                    Slack
                   </Button>
                 </div>
               </div>

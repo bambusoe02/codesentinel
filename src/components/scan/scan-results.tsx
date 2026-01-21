@@ -1,5 +1,6 @@
 'use client';
 
+import { useMemo, lazy, Suspense } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -7,19 +8,25 @@ import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/ui/skeleton';
 import { CodeHighlights } from './code-highlights';
-import { TrendsChart } from '@/components/charts/trends-chart';
+import { ComparisonCard } from '@/components/analysis/comparison-card';
+import { IssueCard } from '@/components/analysis/issue-card';
+import { InsightsSection, generateInsights } from '@/components/analysis/insights-section';
 import { AnalysisIssue } from '@/lib/schema';
 import {
   AlertTriangle,
   Shield,
   TrendingUp,
   Code,
-  XCircle,
   Clock,
-  FileText,
   RefreshCw,
+  CheckCircle2,
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
+
+// Lazy load heavy components
+const TrendChart = lazy(() =>
+  import('@/components/analysis/trend-chart').then((mod) => ({ default: mod.TrendChart }))
+);
 
 interface ScanResultsProps {
   repoName: string;
@@ -32,6 +39,17 @@ async function fetchAnalysisResults(repoName: string) {
   }
   const data = await response.json();
   return data.report;
+}
+
+async function fetchAnalysisHistory(repoName: string, range: string = '30d') {
+  const response = await fetch(
+    `/api/repositories/${encodeURIComponent(repoName)}/history?range=${range}&limit=30`
+  );
+  if (!response.ok) {
+    return { history: [] };
+  }
+  const data = await response.json();
+  return data;
 }
 
 function getGrade(score: number): string {
@@ -49,12 +67,42 @@ function getStatus(score: number): string {
   return 'Needs Improvement';
 }
 
+function calculateCategoryScore(
+  issues: AnalysisIssue[],
+  category: string
+): number {
+  const categoryIssues = issues.filter((issue) => issue.type === category);
+
+  if (categoryIssues.length === 0) {
+    return 100; // Perfect score if no issues
+  }
+
+  let penalty = 0;
+  categoryIssues.forEach((issue) => {
+    switch (issue.severity) {
+      case 'critical':
+        penalty += 15;
+        break;
+      case 'high':
+        penalty += 10;
+        break;
+      case 'medium':
+        penalty += 5;
+        break;
+      case 'low':
+        penalty += 2;
+        break;
+    }
+  });
+
+  return Math.max(0, 100 - Math.min(penalty, 100));
+}
+
 export function ScanResults({ repoName }: ScanResultsProps) {
   const { data: report, isLoading, error, refetch, isError } = useQuery({
     queryKey: ['analysis-results', repoName],
     queryFn: () => fetchAnalysisResults(repoName),
     retry: (failureCount, error: unknown) => {
-      // Don't retry on 404 errors - analysis might not exist yet
       if (error && typeof error === 'object' && 'message' in error) {
         const message = String(error.message);
         if (message.includes('404') || message.includes('not found')) {
@@ -65,43 +113,54 @@ export function ScanResults({ repoName }: ScanResultsProps) {
     },
     retryDelay: 1000,
     refetchInterval: (query) => {
-      // Poll every 5 seconds if no data yet and no error
       if (query.state.error) return false;
       return query.state.data ? false : 5000;
     },
   });
 
-  // Show loading skeleton while fetching
+  // Fetch analysis history for comparison and trends
+  const { data: historyData, isLoading: isHistoryLoading } = useQuery({
+    queryKey: ['analysis-history', repoName],
+    queryFn: () => fetchAnalysisHistory(repoName),
+    enabled: !!report, // Only fetch if we have current report
+  });
+
+  // Show loading skeleton
   if (isLoading) {
     return (
       <div className="space-y-6">
+        {/* Score skeleton */}
         <Card>
-          <CardHeader>
-            <Skeleton className="h-6 w-48" />
-          </CardHeader>
-          <CardContent>
-            <Skeleton className="h-32 w-full" />
+          <CardContent className="p-6">
+            <div className="text-center">
+              <Skeleton className="w-24 h-24 rounded-full mx-auto mb-4" />
+              <Skeleton className="h-8 w-48 mx-auto mb-2" />
+              <Skeleton className="h-4 w-32 mx-auto mb-4" />
+              <Skeleton className="h-2 w-full max-w-md mx-auto" />
+            </div>
           </CardContent>
         </Card>
-        {[1, 2, 3].map((i) => (
-          <Card key={i}>
-            <CardHeader>
-              <Skeleton className="h-6 w-32" />
-            </CardHeader>
-            <CardContent>
-              <Skeleton className="h-24 w-full" />
-            </CardContent>
-          </Card>
-        ))}
+
+        {/* Category skeletons */}
+        <div className="grid md:grid-cols-3 gap-4">
+          {[1, 2, 3].map((i) => (
+            <Card key={i}>
+              <CardContent className="p-6">
+                <Skeleton className="h-16 w-full mb-4" />
+                <Skeleton className="h-8 w-24 mb-2" />
+                <Skeleton className="h-2 w-full mb-2" />
+                <Skeleton className="h-4 w-20" />
+              </CardContent>
+            </Card>
+          ))}
+        </div>
       </div>
     );
   }
 
-  // Only show error if it's a real error (not just missing data)
-  // 404 might mean analysis doesn't exist yet, which is OK
+  // Error handling
   if (isError && error && typeof error === 'object' && 'message' in error) {
     const errorMessage = String(error.message);
-    // If it's a 404, show a helpful message instead of error
     if (errorMessage.includes('404') || errorMessage.includes('not found')) {
       return (
         <Card>
@@ -123,7 +182,6 @@ export function ScanResults({ repoName }: ScanResultsProps) {
     }
   }
 
-  // Show error for real errors
   if (isError && !report) {
     return (
       <Card>
@@ -144,7 +202,6 @@ export function ScanResults({ repoName }: ScanResultsProps) {
     );
   }
 
-  // No report found (shouldn't happen after above checks, but safety check)
   if (!report) {
     return (
       <Card>
@@ -166,53 +223,78 @@ export function ScanResults({ repoName }: ScanResultsProps) {
   }
 
   const overallScore = report.overallScore || 0;
-  const issues = report.issues || [];
+  const issues = (report.issues as AnalysisIssue[]) || [];
   const recommendations = report.recommendations || [];
 
+  // Calculate category scores
+  const securityScore = calculateCategoryScore(issues, 'security');
+  const performanceScore = calculateCategoryScore(issues, 'performance');
+  const maintainabilityScore = calculateCategoryScore(issues, 'maintainability');
+  const reliabilityScore = calculateCategoryScore(issues, 'reliability');
+
+  // Get previous analysis for comparison
+  const previousAnalysis = historyData?.history?.[1]; // Second item (index 1) is previous
+  const previousScore = previousAnalysis?.overallScore;
+  const previousSecurityScore = previousAnalysis?.securityScore;
+  const previousPerformanceScore = previousAnalysis?.performanceScore;
+  const previousMaintainabilityScore = previousAnalysis?.maintainabilityScore;
+
+  // Prepare trend data
+  const trendData = useMemo(() => {
+    if (!historyData?.history) return [];
+    return historyData.history.map((item: typeof previousAnalysis) => ({
+      date: item.createdAt,
+      overallScore: item.overallScore,
+      securityScore: item.securityScore || 0,
+      performanceScore: item.performanceScore || 0,
+      maintainabilityScore: item.maintainabilityScore || 0,
+    }));
+  }, [historyData]);
+
   // Group issues by type
-  const issuesByType = {
+  const issuesByType = useMemo(() => ({
     security: issues.filter((i: AnalysisIssue) => i.type === 'security'),
     performance: issues.filter((i: AnalysisIssue) => i.type === 'performance'),
     maintainability: issues.filter((i: AnalysisIssue) => i.type === 'maintainability'),
     reliability: issues.filter((i: AnalysisIssue) => i.type === 'reliability'),
-  };
+  }), [issues]);
 
   const categories = [
     {
       id: 'security',
       title: 'Security',
-      score: 85, // TODO: Calculate from issues
-      grade: 'A',
+      score: securityScore,
+      grade: getGrade(securityScore),
       issuesCount: issuesByType.security.length,
       icon: Shield,
       color: 'text-green-600',
       bgColor: 'bg-green-50 dark:bg-green-900/20',
       borderColor: 'border-green-200 dark:border-green-800',
-      issues: issuesByType.security.slice(0, 5),
+      issues: issuesByType.security,
     },
     {
       id: 'performance',
       title: 'Performance',
-      score: 72, // TODO: Calculate from issues
-      grade: 'B',
+      score: performanceScore,
+      grade: getGrade(performanceScore),
       issuesCount: issuesByType.performance.length,
       icon: TrendingUp,
       color: 'text-yellow-600',
       bgColor: 'bg-yellow-50 dark:bg-yellow-900/20',
       borderColor: 'border-yellow-200 dark:border-yellow-800',
-      issues: issuesByType.performance.slice(0, 5),
+      issues: issuesByType.performance,
     },
     {
       id: 'maintainability',
       title: 'Maintainability',
-      score: 65, // TODO: Calculate from issues
-      grade: 'C',
+      score: maintainabilityScore,
+      grade: getGrade(maintainabilityScore),
       issuesCount: issuesByType.maintainability.length,
       icon: Code,
       color: 'text-red-600',
       bgColor: 'bg-red-50 dark:bg-red-900/20',
       borderColor: 'border-red-200 dark:border-red-800',
-      issues: issuesByType.maintainability.slice(0, 5),
+      issues: issuesByType.maintainability,
     },
   ];
 
@@ -222,14 +304,35 @@ export function ScanResults({ repoName }: ScanResultsProps) {
     status: getStatus(overallScore),
   };
 
+  // Generate insights
+  const insights = useMemo(
+    () =>
+      generateInsights(
+        overallScore,
+        previousScore,
+        securityScore,
+        performanceScore,
+        maintainabilityScore,
+        issues.length
+      ),
+    [
+      overallScore,
+      previousScore,
+      securityScore,
+      performanceScore,
+      maintainabilityScore,
+      issues.length,
+    ]
+  );
+
   return (
     <div className="space-y-6">
       {/* Overall Score */}
       <Card>
         <CardContent className="p-6">
           <div className="text-center">
-            <div className="inline-flex items-center justify-center w-24 h-24 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 mb-4">
-              <span className="text-2xl font-bold text-white">{overall.score}</span>
+            <div className="inline-flex items-center justify-center w-24 h-24 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 mb-4 transition-all duration-300 hover:scale-110 hover:shadow-lg shadow-purple-500/50">
+              <span className="text-2xl font-bold text-white transition-all duration-500">{overall.score}</span>
             </div>
             <h2 className="text-2xl font-bold mb-2">Health Score: {overall.grade}</h2>
             <p className="text-muted-foreground mb-4">{overall.status} overall health</p>
@@ -237,6 +340,24 @@ export function ScanResults({ repoName }: ScanResultsProps) {
           </div>
         </CardContent>
       </Card>
+
+      {/* Comparison Card */}
+      {previousScore !== undefined && (
+        <ComparisonCard
+          currentScore={overallScore}
+          previousScore={previousScore}
+          currentSecurityScore={securityScore}
+          previousSecurityScore={previousSecurityScore}
+          currentPerformanceScore={performanceScore}
+          previousPerformanceScore={previousPerformanceScore}
+          currentMaintainabilityScore={maintainabilityScore}
+          previousMaintainabilityScore={previousMaintainabilityScore}
+          previousAnalysisDate={previousAnalysis?.createdAt ? new Date(previousAnalysis.createdAt) : undefined}
+        />
+      )}
+
+      {/* Insights Section */}
+      {insights.length > 0 && <InsightsSection insights={insights} />}
 
       {/* Category Scores */}
       <div className="grid md:grid-cols-3 gap-4">
@@ -257,7 +378,7 @@ export function ScanResults({ repoName }: ScanResultsProps) {
                 <div className="text-2xl font-bold mb-2">{category.score}/100</div>
                 <Progress value={category.score} className="mb-2" />
                 <p className="text-sm text-muted-foreground">
-                  {category.issuesCount} issues found
+                  {category.issuesCount} issue{category.issuesCount !== 1 ? 's' : ''} found
                 </p>
               </CardContent>
             </Card>
@@ -286,50 +407,30 @@ export function ScanResults({ repoName }: ScanResultsProps) {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
-                  {category.issues.map((issue: AnalysisIssue, index: number) => (
-                    <div key={index} className="border rounded-lg p-4">
-                      <div className="flex items-start justify-between mb-2">
-                        <div className="flex items-center space-x-2">
-                          {issue.severity === 'high' && (
-                            <XCircle className="w-4 h-4 text-red-500" />
-                          )}
-                          {issue.severity === 'medium' && (
-                            <AlertTriangle className="w-4 h-4 text-yellow-500" />
-                          )}
-                          {issue.severity === 'low' && (
-                            <Clock className="w-4 h-4 text-blue-500" />
-                          )}
-                          <h4 className="font-medium">{issue.title}</h4>
-                        </div>
-                        <Badge
-                          variant={
-                            issue.severity === 'high'
-                              ? 'destructive'
-                              : issue.severity === 'medium'
-                              ? 'default'
-                              : 'secondary'
-                          }
-                        >
-                          {issue.severity}
-                        </Badge>
-                      </div>
-                      <p className="text-sm text-muted-foreground mb-2">
-                        {issue.description}
-                      </p>
-                      {issue.file && (
-                        <div className="flex items-center space-x-2 text-xs text-muted-foreground mb-2">
-                          <FileText className="w-3 h-3" />
-                          <span>{issue.file}</span>
-                          {issue.line && <span>Line {issue.line}</span>}
-                        </div>
-                      )}
-                      <div className="bg-muted p-3 rounded text-sm">
-                        <strong>Recommended Fix:</strong> {issue.fix}
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                {category.issues.length === 0 ? (
+                  <div className="text-center py-12">
+                    <CheckCircle2 className="w-16 h-16 mx-auto text-green-500 mb-4" />
+                    <h3 className="text-lg font-semibold mb-2">
+                      No {category.title} Issues Found!
+                    </h3>
+                    <p className="text-muted-foreground mb-2">
+                      Your code meets all {category.title.toLowerCase()} best practices.
+                    </p>
+                    <p className="text-2xl">🎉</p>
+                  </div>
+                ) : (
+          <div className="space-y-4">
+            {category.issues.map((issue: AnalysisIssue, index: number) => (
+              <div
+                key={issue.id || index}
+                className="animate-in slide-in-from-left-4 duration-300"
+                style={{ animationDelay: `${index * 50}ms` }}
+              >
+                <IssueCard issue={issue} index={index} />
+              </div>
+            ))}
+          </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
@@ -340,7 +441,9 @@ export function ScanResults({ repoName }: ScanResultsProps) {
         </TabsContent>
 
         <TabsContent value="trends">
-          <TrendsChart />
+          <Suspense fallback={<Skeleton className="h-[300px] w-full" />}>
+            <TrendChart data={trendData} isLoading={isHistoryLoading} />
+          </Suspense>
         </TabsContent>
       </Tabs>
 
@@ -373,4 +476,3 @@ export function ScanResults({ repoName }: ScanResultsProps) {
     </div>
   );
 }
-
