@@ -94,7 +94,7 @@ export function ShareModal({ isOpen, onClose, repoName }: ShareModalProps) {
           <div className="text-center">
             <h3 className="font-semibold">{repoName}</h3>
             <p className="text-sm text-muted-foreground">Repository Analysis Report</p>
-            <Badge variant="secondary" className="mt-2">
+            <Badge variant="secondary" className="mt-2" suppressHydrationWarning>
               Generated {new Date().toLocaleDateString()}
             </Badge>
           </div>

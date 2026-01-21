@@ -49,8 +49,33 @@ export function ScanProgress({ repoName, onComplete }: ScanProgressProps) {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    let isMounted = true;
+
+    const checkExisting = async () => {
+      try {
+        const response = await fetch(`/api/repositories/${encodeURIComponent(repoName)}/results`);
+        if (response.ok && isMounted) {
+          setIsComplete(true);
+          setProgress(100);
+          if (onComplete) {
+            onComplete();
+          }
+          return;
+        }
+      } catch {
+        // No existing analysis, continue to start new one
+      }
+      
+      // Only start new analysis if component is still mounted and no existing analysis found
+      if (isMounted) {
+        runScan();
+      }
+    };
+
     const runScan = async () => {
       try {
+        if (!isMounted) return;
+        
         setProgress(10);
         setCurrentStep(0);
         
@@ -67,13 +92,17 @@ export function ScanProgress({ repoName, onComplete }: ScanProgressProps) {
         // Simulate progress during analysis
         const steps = scanSteps.length;
         for (let i = 0; i < steps; i++) {
-        setCurrentStep(i);
+          if (!isMounted) return;
+          
+          setCurrentStep(i);
           const stepProgress = ((i + 1) / steps) * 90; // Reserve 10% for completion
           setProgress(stepProgress);
           
           // Wait a bit between steps
           await new Promise(resolve => setTimeout(resolve, 1000));
         }
+
+        if (!isMounted) return;
 
         setProgress(100);
         setCurrentStep(steps);
@@ -83,32 +112,18 @@ export function ScanProgress({ repoName, onComplete }: ScanProgressProps) {
           onComplete();
         }
       } catch (err) {
-        // Error is handled by mutation onError handler
+        if (!isMounted) return;
+        
         setError(err instanceof Error ? err.message : 'Unknown error occurred');
         setIsComplete(true);
-        }
-    };
-
-    // Check if analysis already exists
-    const checkExisting = async () => {
-      try {
-        const response = await fetch(`/api/repositories/${encodeURIComponent(repoName)}/results`);
-        if (response.ok) {
-      setIsComplete(true);
-      setProgress(100);
-          if (onComplete) {
-            onComplete();
-          }
-          return;
-        }
-      } catch {
-        // No existing analysis, start new one
       }
-      
-      runScan();
     };
 
     checkExisting();
+
+    return () => {
+      isMounted = false;
+    };
   }, [repoName, onComplete]);
 
   if (error) {

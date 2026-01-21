@@ -18,8 +18,9 @@ import {
   Loader2,
 } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { formatDistanceToNow } from 'date-fns';
 import { logger } from '@/lib/logger';
+import { toast } from 'sonner';
+import { ClientOnlyDate } from '@/components/client-only-date';
 
 interface Repository {
   id: string;
@@ -96,15 +97,25 @@ export function RepositoryList() {
     onSuccess: (data, repoFullName) => {
       queryClient.invalidateQueries({ queryKey: ['repositories'] });
       queryClient.invalidateQueries({ queryKey: ['analysis-results', repoFullName] });
+      queryClient.invalidateQueries({ queryKey: ['analysis-history', repoFullName] });
       queryClient.invalidateQueries({ queryKey: ['recent-activity'] });
       setAnalyzingRepo(null);
-      router.push(`/scan/${encodeURIComponent(repoFullName)}`);
+      // Use window.location instead of router.push to avoid hydration issues
+      setTimeout(() => {
+        window.location.href = `/scan/${encodeURIComponent(repoFullName)}`;
+      }, 100);
     },
     onError: (error, repoFullName) => {
       logger.error('Analysis error', error, { repoFullName });
       // Revert optimistic update
       setAnalyzingRepo(null);
-      // TODO: Add toast notification here
+      // Show error toast
+      toast.error(
+        error instanceof Error ? error.message : 'Failed to start analysis',
+        {
+          description: `Could not analyze ${repoFullName}. Please try again.`,
+        }
+      );
     },
   });
 
@@ -209,7 +220,7 @@ export function RepositoryList() {
                     {repo.latestAnalysis && (
                       <span className="flex items-center">
                         <CheckCircle2 className="w-3 h-3 mr-1 text-green-600" />
-                        Analyzed {formatDistanceToNow(new Date(repo.latestAnalysis.createdAt), { addSuffix: true })}
+                        Analyzed <ClientOnlyDate date={repo.latestAnalysis.createdAt} format="relative" className="ml-1" />
                       </span>
                     )}
                   </div>

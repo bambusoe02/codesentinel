@@ -4,6 +4,7 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { AlertTriangle, RefreshCw } from 'lucide-react';
+import { logger } from '@/lib/logger';
 
 interface ErrorBoundaryState {
   hasError: boolean;
@@ -32,10 +33,8 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
       // TODO: Integrate with error reporting service (e.g., Sentry)
       // logErrorToService(error, errorInfo);
     }
-    // Logging is intentional here for error tracking
-    // eslint-disable-next-line no-console
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    console.error('ErrorBoundary caught an error:', error, errorInfo);
+    // Log error using logger utility
+    logger.error('ErrorBoundary caught an error', error, { errorInfo });
   }
 
   handleReset = () => {

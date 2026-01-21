@@ -3,7 +3,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
-import { formatDistanceToNow } from 'date-fns';
+import { ClientOnlyDate } from '@/components/client-only-date';
 
 interface ComparisonCardProps {
   currentScore: number;
@@ -171,7 +171,7 @@ export function ComparisonCard({
           {previousAnalysisDate && (
             <div className="text-xs text-muted-foreground text-center pt-2 border-t">
               Compared to analysis from{' '}
-              {formatDistanceToNow(new Date(previousAnalysisDate), { addSuffix: true })}
+              <ClientOnlyDate date={previousAnalysisDate} format="relative" />
             </div>
           )}
         </div>

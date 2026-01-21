@@ -122,7 +122,7 @@ export function IssueCard({ issue, index }: IssueCardProps) {
 
         {/* Expanded Details */}
         {isExpanded && (
-          <div className="mt-4 space-y-4 pt-4 border-t animate-in slide-in-from-top-2 duration-200">
+          <div className="mt-4 space-y-4 pt-4 border-t">
             {/* Affected Files */}
             {issue.file && (
               <div>

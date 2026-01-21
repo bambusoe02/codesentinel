@@ -113,9 +113,15 @@ export function ScanResults({ repoName }: ScanResultsProps) {
     },
     retryDelay: 1000,
     refetchInterval: (query) => {
+      // Only poll if no data exists and no error
       if (query.state.error) return false;
-      return query.state.data ? false : 5000;
+      if (query.state.data) return false;
+      // Poll every 3 seconds while waiting for analysis to complete
+      return 3000;
     },
+    // Ensure we get fresh data after re-analysis
+    // Refresh data after re-analysis
+    staleTime: 1000, // Consider data stale after 1 second
   });
 
   // Fetch analysis history for comparison and trends
@@ -421,13 +427,7 @@ export function ScanResults({ repoName }: ScanResultsProps) {
                 ) : (
           <div className="space-y-4">
             {category.issues.map((issue: AnalysisIssue, index: number) => (
-              <div
-                key={issue.id || index}
-                className="animate-in slide-in-from-left-4 duration-300"
-                style={{ animationDelay: `${index * 50}ms` }}
-              >
-                <IssueCard issue={issue} index={index} />
-              </div>
+              <IssueCard key={issue.id || index} issue={issue} index={index} />
             ))}
           </div>
                 )}
@@ -441,7 +441,18 @@ export function ScanResults({ repoName }: ScanResultsProps) {
         </TabsContent>
 
         <TabsContent value="trends">
-          <Suspense fallback={<Skeleton className="h-[300px] w-full" />}>
+          <Suspense 
+            fallback={
+              <Card>
+                <CardHeader>
+                  <Skeleton className="h-6 w-32" />
+                </CardHeader>
+                <CardContent>
+                  <Skeleton className="h-[300px] w-full" />
+                </CardContent>
+              </Card>
+            }
+          >
             <TrendChart data={trendData} isLoading={isHistoryLoading} />
           </Suspense>
         </TabsContent>
