@@ -48,6 +48,13 @@
 - **Streaming responses** for improved loading performance
 - **Intelligent caching** with TanStack Query
 - **Optimized bundle** with code splitting and lazy loading
+- **Optimistic UI** for instant user feedback on actions
+
+### 🛡️ Error Handling & Resilience
+- **Error Boundaries** - Graceful error recovery with user-friendly error messages
+- **Centralized logging** - Production-ready logger with development/production modes
+- **Improved loading states** - Skeleton loaders instead of empty screens or error states
+- **Smart error messages** - Context-aware error handling for better UX
 
 ## 🏗️ Architecture
 
@@ -61,11 +68,13 @@ code-sentinel/
 │   ├── ui/               # shadcn/ui components
 │   ├── dashboard/        # Dashboard-specific components
 │   ├── scan/             # Analysis result components
-│   └── charts/           # Data visualization
+│   ├── charts/           # Data visualization
+│   └── error-boundary.tsx # Error boundary for graceful error handling
 ├── lib/                  # Core business logic
 │   ├── analyzer.ts       # AI analysis engine
 │   ├── github.ts         # GitHub API client
 │   ├── encryption.ts     # Token encryption utilities
+│   ├── logger.ts         # Centralized logging utility
 │   ├── pdf-generator.ts  # PDF export utilities
 │   └── stores/           # Zustand state management
 ├── hooks/                # Custom React hooks
@@ -455,6 +464,22 @@ const results = await analyzer.analyze();
 // - metrics: RepositoryMetrics
 ```
 
+### Error Handling & Logging
+
+```typescript
+import { logger } from '@/lib/logger';
+
+// Logging with context
+logger.info('User action completed', { userId: '123', action: 'analyze' });
+logger.warn('Rate limit approaching', { remaining: 50 });
+logger.error('Analysis failed', error, { repoName: 'owner/repo' });
+
+// Logger automatically:
+// - Shows logs in development mode
+// - Suppresses non-error logs in production
+// - Can be extended to send to error monitoring services (Sentry, etc.)
+```
+
 ### PDF Export
 
 ```typescript
@@ -491,6 +516,8 @@ We welcome contributions! Please follow these steps:
 - **Prettier**: Code formatting (via ESLint)
 - **Testing**: Write tests for new features
 - **Documentation**: Update docs for API changes
+- **Logging**: Use `logger` from `@/lib/logger` instead of `console.log` for better production control
+- **Error Handling**: Wrap components in ErrorBoundary for graceful error recovery
 
 ## 📊 Performance
 
