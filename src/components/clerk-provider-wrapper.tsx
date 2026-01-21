@@ -12,7 +12,10 @@ export function ClerkProviderWrapper({ children, publishableKey }: ClerkProvider
   // This ensures client-side components can use Clerk hooks
   if (publishableKey && publishableKey.trim() !== '' && publishableKey !== 'pk_test_...') {
     return (
-      <ClerkProvider publishableKey={publishableKey}>
+      <ClerkProvider 
+        publishableKey={publishableKey}
+        fallbackRedirectUrl="/dashboard"
+      >
         {children}
       </ClerkProvider>
     );

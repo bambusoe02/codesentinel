@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { formatDistanceToNow } from 'date-fns';
+import { logger } from '@/lib/logger';
 
 interface Repository {
   id: string;
@@ -79,22 +80,40 @@ export function RepositoryList() {
       });
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to start analysis');
+        const errorMessage = errorData.details 
+          ? `${errorData.error}: ${errorData.details}` 
+          : errorData.error || 'Failed to start analysis';
+        throw new Error(errorMessage);
       }
       return response.json();
+    },
+    onMutate: async (repoFullName) => {
+      // Cancel any outgoing refetches
+      await queryClient.cancelQueries({ queryKey: ['repositories'] });
+      // Optimistically update UI
+      setAnalyzingRepo(repoFullName);
     },
     onSuccess: (data, repoFullName) => {
       queryClient.invalidateQueries({ queryKey: ['repositories'] });
       queryClient.invalidateQueries({ queryKey: ['analysis-results', repoFullName] });
       queryClient.invalidateQueries({ queryKey: ['recent-activity'] });
+      setAnalyzingRepo(null);
       router.push(`/scan/${encodeURIComponent(repoFullName)}`);
     },
-    onError: () => {
+    onError: (error, repoFullName) => {
+      logger.error('Analysis error', error, { repoFullName });
+      // Revert optimistic update
       setAnalyzingRepo(null);
+      // TODO: Add toast notification here
     },
   });
 
   const handleAnalyze = (repoFullName: string) => {
+    if (!repoFullName) {
+      return;
+    }
+    logger.info('Starting analysis', { repoFullName });
+    // Optimistically update UI immediately
     setAnalyzingRepo(repoFullName);
     analyzeMutation.mutate(repoFullName);
   };
@@ -224,11 +243,12 @@ export function RepositoryList() {
                         size="sm" 
                         variant={repo.latestAnalysis ? "secondary" : "default"}
                         className="flex-1 sm:flex-none"
-                        onClick={() => handleAnalyze(repo.fullName)}
+                        onClick={() => repo.fullName && handleAnalyze(repo.fullName)}
+                        disabled={!repo.fullName}
                       >
                         {repo.latestAnalysis ? 'Re-analyze' : 'Analyze'}
                       </Button>
-                      {repo.latestAnalysis && (
+                      {repo.latestAnalysis && repo.fullName && (
                         <Link href={`/scan/${encodeURIComponent(repo.fullName)}`}>
                           <Button size="sm" variant="outline" className="flex-1 sm:flex-none">
                             View Results

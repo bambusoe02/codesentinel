@@ -17,15 +17,18 @@ try {
   const hasSecretKey = !!process.env.CLERK_SECRET_KEY;
   isClerkAvailable = hasPublishableKey && hasSecretKey;
 
-  console.log('Clerk availability check:', {
-    hasPublishableKey,
-    hasSecretKey,
-    isClerkAvailable,
-    nodeEnv: process.env.NODE_ENV,
-    publishableKeyPrefix: process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY?.substring(0, 10) + '...',
-    hasDatabaseUrl: !!process.env.DATABASE_URL,
-    hasGitHubToken: !!process.env.GITHUB_TOKEN
-  });
+  // Only log in development
+  if (process.env.NODE_ENV === 'development') {
+    console.log('Clerk availability check:', {
+      hasPublishableKey,
+      hasSecretKey,
+      isClerkAvailable,
+      nodeEnv: process.env.NODE_ENV,
+      publishableKeyPrefix: process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY?.substring(0, 10) + '...',
+      hasDatabaseUrl: !!process.env.DATABASE_URL,
+      hasGitHubToken: !!process.env.GITHUB_TOKEN
+    });
+  }
 } catch {
   isClerkAvailable = false;
 }

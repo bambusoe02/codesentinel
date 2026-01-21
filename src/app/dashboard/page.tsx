@@ -5,6 +5,7 @@ import { RecentActivity } from '@/components/dashboard/recent-activity';
 import { QuickActions } from '@/components/dashboard/quick-actions';
 import { UserSync } from '@/components/dashboard/user-sync';
 import { Skeleton } from '@/components/ui/skeleton';
+import { ErrorBoundary } from '@/components/error-boundary';
 
 export const dynamic = 'force-dynamic';
 
@@ -13,38 +14,48 @@ export const generateStaticParams = undefined;
 
 export default function DashboardPage() {
   return (
-    <div className="space-y-6">
-      <UserSync />
-      {/* Welcome Section */}
-      <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg p-4 sm:p-6 text-white">
-        <h1 className="text-xl sm:text-2xl font-bold mb-2">Welcome back!</h1>
-        <p className="text-sm sm:text-base text-blue-100">
-          Ready to analyze your repositories? Connect GitHub to get started with AI-powered code analysis.
-        </p>
-      </div>
-
-      {/* Quick Actions */}
-      <QuickActions />
-
-      {/* Metrics Overview */}
-      <Suspense fallback={<MetricsGridSkeleton />}>
-        <MetricsGrid />
-      </Suspense>
-
-      {/* Repository List & Recent Activity */}
-      <div className="grid lg:grid-cols-3 gap-4 sm:gap-6">
-        <div id="repositories" className="lg:col-span-2">
-          <Suspense fallback={<RepositoryListSkeleton />}>
-            <RepositoryList />
-          </Suspense>
+    <ErrorBoundary>
+      <div className="space-y-6">
+        <UserSync />
+        {/* Welcome Section */}
+        <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg p-4 sm:p-6 text-white">
+          <h1 className="text-xl sm:text-2xl font-bold mb-2">Welcome back!</h1>
+          <p className="text-sm sm:text-base text-blue-100">
+            Ready to analyze your repositories? Connect GitHub to get started with AI-powered code analysis.
+          </p>
         </div>
-        <div className="hidden lg:block">
-          <Suspense fallback={<RecentActivitySkeleton />}>
-            <RecentActivity />
+
+        {/* Quick Actions */}
+        <ErrorBoundary>
+          <QuickActions />
+        </ErrorBoundary>
+
+        {/* Metrics Overview */}
+        <ErrorBoundary>
+          <Suspense fallback={<MetricsGridSkeleton />}>
+            <MetricsGrid />
           </Suspense>
+        </ErrorBoundary>
+
+        {/* Repository List & Recent Activity */}
+        <div className="grid lg:grid-cols-3 gap-4 sm:gap-6">
+          <div id="repositories" className="lg:col-span-2">
+            <ErrorBoundary>
+              <Suspense fallback={<RepositoryListSkeleton />}>
+                <RepositoryList />
+              </Suspense>
+            </ErrorBoundary>
+          </div>
+          <div className="hidden lg:block">
+            <ErrorBoundary>
+              <Suspense fallback={<RecentActivitySkeleton />}>
+                <RecentActivity />
+              </Suspense>
+            </ErrorBoundary>
+          </div>
         </div>
       </div>
-    </div>
+    </ErrorBoundary>
   );
 }
 

@@ -8,7 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/ui/skeleton';
 import { CodeHighlights } from './code-highlights';
 import { TrendsChart } from '@/components/charts/trends-chart';
-import { AnalysisIssue } from '@/lib/analyzer';
+import { AnalysisIssue } from '@/lib/schema';
 import {
   AlertTriangle,
   Shield,
@@ -50,16 +50,28 @@ function getStatus(score: number): string {
 }
 
 export function ScanResults({ repoName }: ScanResultsProps) {
-  const { data: report, isLoading, error, refetch } = useQuery({
+  const { data: report, isLoading, error, refetch, isError } = useQuery({
     queryKey: ['analysis-results', repoName],
     queryFn: () => fetchAnalysisResults(repoName),
-    retry: false,
+    retry: (failureCount, error: unknown) => {
+      // Don't retry on 404 errors - analysis might not exist yet
+      if (error && typeof error === 'object' && 'message' in error) {
+        const message = String(error.message);
+        if (message.includes('404') || message.includes('not found')) {
+          return false;
+        }
+      }
+      return failureCount < 2;
+    },
+    retryDelay: 1000,
     refetchInterval: (query) => {
-      // Poll every 5 seconds if no data yet
+      // Poll every 5 seconds if no data yet and no error
+      if (query.state.error) return false;
       return query.state.data ? false : 5000;
     },
   });
 
+  // Show loading skeleton while fetching
   if (isLoading) {
     return (
       <div className="space-y-6">
@@ -85,17 +97,65 @@ export function ScanResults({ repoName }: ScanResultsProps) {
     );
   }
 
-  if (error || !report) {
+  // Only show error if it's a real error (not just missing data)
+  // 404 might mean analysis doesn't exist yet, which is OK
+  if (isError && error && typeof error === 'object' && 'message' in error) {
+    const errorMessage = String(error.message);
+    // If it's a 404, show a helpful message instead of error
+    if (errorMessage.includes('404') || errorMessage.includes('not found')) {
+      return (
+        <Card>
+          <CardContent className="p-6">
+            <div className="text-center py-8">
+              <Clock className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
+              <h3 className="text-lg font-medium mb-2">Analysis in progress</h3>
+              <p className="text-muted-foreground mb-4">
+                The analysis for this repository is still running. Results will appear here when complete.
+              </p>
+              <Button onClick={() => refetch()} variant="outline">
+                <RefreshCw className="w-4 h-4 mr-2" />
+                Check again
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      );
+    }
+  }
+
+  // Show error for real errors
+  if (isError && !report) {
     return (
       <Card>
         <CardContent className="p-6">
           <div className="text-center py-8">
-            <AlertTriangle className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
-            <h3 className="text-lg font-medium mb-2">No analysis results found</h3>
+            <AlertTriangle className="w-12 h-12 mx-auto text-destructive mb-4" />
+            <h3 className="text-lg font-medium mb-2">Error loading results</h3>
+            <p className="text-muted-foreground mb-4">
+              {error instanceof Error ? error.message : 'Failed to load analysis results'}
+            </p>
+            <Button onClick={() => refetch()}>
+              <RefreshCw className="w-4 h-4 mr-2" />
+              Try again
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // No report found (shouldn't happen after above checks, but safety check)
+  if (!report) {
+    return (
+      <Card>
+        <CardContent className="p-6">
+          <div className="text-center py-8">
+            <Clock className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
+            <h3 className="text-lg font-medium mb-2">No analysis results yet</h3>
             <p className="text-muted-foreground mb-4">
               Start an analysis to see results here.
             </p>
-            <Button onClick={() => refetch()}>
+            <Button onClick={() => refetch()} variant="outline">
               <RefreshCw className="w-4 h-4 mr-2" />
               Refresh
             </Button>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import dynamic from "next/dynamic";
@@ -43,8 +43,16 @@ const SignInButton = dynamic(() =>
 
 // Wrapper component to conditionally render Clerk components
 function ClerkWrapper({ children, fallback }: { children: React.ReactNode; fallback?: React.ReactNode }) {
-  const [isAvailable] = useState(() => getClerkAvailable());
+  const [isAvailable, setIsAvailable] = useState(false);
 
+  // Only check availability after mount to avoid hydration mismatch
+  // This is intentional - we need to check client-side only
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    setIsAvailable(getClerkAvailable());
+  }, []);
+
+  // During SSR or before mount, render fallback to avoid hydration mismatch
   if (!isAvailable) {
     return <>{fallback || null}</>;
   }

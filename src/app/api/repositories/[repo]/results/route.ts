@@ -3,6 +3,7 @@ import { db } from '@/lib/db';
 import { users, repositories, analysisReports } from '@/lib/schema';
 import { eq, and, desc } from 'drizzle-orm';
 import { NextResponse } from 'next/server';
+import { logger } from '@/lib/logger';
 
 export async function GET(
   request: Request,
@@ -48,7 +49,22 @@ export async function GET(
       .limit(1);
 
     if (!repo) {
-      return NextResponse.json({ error: 'Repository not found' }, { status: 404 });
+      // Get all user repos for debugging
+      const allUserRepos = await db
+        .select({ fullName: repositories.fullName })
+        .from(repositories)
+        .where(eq(repositories.userId, user.id));
+      
+      logger.error('Repository not found in results', new Error('Repository not found'), {
+        requested: repoFullName,
+        available: allUserRepos.map(r => r.fullName),
+        userId: user.id,
+      });
+
+      return NextResponse.json({ 
+        error: 'Repository not found',
+        details: `Looking for: ${repoFullName}`
+      }, { status: 404 });
     }
 
     // Get latest analysis report
@@ -65,7 +81,7 @@ export async function GET(
 
     return NextResponse.json({ report: reports[0] });
   } catch (error) {
-    console.error('Error fetching analysis results:', error);
+    logger.error('Error fetching analysis results', error);
     return NextResponse.json(
       { error: 'Failed to fetch analysis results' },
       { status: 500 }

@@ -6,6 +6,7 @@ import { NextResponse } from 'next/server';
 import { GitHubClient } from '@/lib/github';
 import { CodeAnalyzer } from '@/lib/analyzer';
 import { decrypt } from '@/lib/encryption';
+import { logger } from '@/lib/logger';
 
 export async function POST(
   request: Request,
@@ -51,7 +52,22 @@ export async function POST(
       .limit(1);
 
     if (!repo) {
-      return NextResponse.json({ error: 'Repository not found' }, { status: 404 });
+      // Get all user repos for debugging
+      const allUserRepos = await db
+        .select({ fullName: repositories.fullName })
+        .from(repositories)
+        .where(eq(repositories.userId, user.id));
+      
+      logger.error('Repository not found in analyze', new Error('Repository not found'), {
+        requested: repoFullName,
+        available: allUserRepos.map(r => r.fullName),
+        userId: user.id,
+      });
+
+      return NextResponse.json({ 
+        error: 'Repository not found',
+        details: `Looking for: ${repoFullName}. Available repos: ${allUserRepos.map(r => r.fullName).join(', ')}`
+      }, { status: 404 });
     }
 
     // Try to get GitHub token from user's stored token (decrypt if encrypted), fallback to environment
@@ -64,7 +80,7 @@ export async function POST(
       } catch (error) {
         // If decryption fails, token might be plain text (backward compatibility)
         githubToken = user.githubToken;
-        console.warn('Failed to decrypt token, using as plain text:', error);
+        logger.warn('Failed to decrypt token, using as plain text', { error });
       }
     } else {
       githubToken = process.env.GITHUB_TOKEN || null;
@@ -117,7 +133,7 @@ export async function POST(
       analysis: analysisResult,
     });
   } catch (error) {
-    console.error('Error analyzing repository:', error);
+    logger.error('Error analyzing repository', error);
     return NextResponse.json(
       { error: 'Failed to analyze repository', details: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
