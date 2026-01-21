@@ -28,7 +28,6 @@ interface ShareModalProps {
 export function ShareModal({ isOpen, onClose, repoName }: ShareModalProps) {
   const [shareLink, setShareLink] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
-  const [shareToken, setShareToken] = useState<string>('');
   const [owner, repo] = repoName.split('/');
 
   // Generate shareable link (mock implementation)
@@ -40,7 +39,6 @@ export function ShareModal({ isOpen, onClose, repoName }: ShareModalProps) {
     const mockToken = Math.random().toString(36).substring(2, 15);
     const link = `${window.location.origin}/shared/${mockToken}`;
     setShareLink(link);
-    setShareToken(mockToken);
     setIsGenerating(false);
     toast.success('Shareable link generated!');
   };

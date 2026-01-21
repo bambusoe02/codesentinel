@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -65,7 +64,6 @@ function getScoreColor(score: number): string {
 }
 
 export function RepositoryList() {
-  const router = useRouter();
   const queryClient = useQueryClient();
   const [analyzingRepo, setAnalyzingRepo] = useState<string | null>(null);
 

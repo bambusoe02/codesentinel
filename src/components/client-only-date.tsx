@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { formatDistanceToNow } from 'date-fns';
 
 interface ClientOnlyDateProps {
   date: Date | string;
@@ -9,25 +9,19 @@ interface ClientOnlyDateProps {
 }
 
 export function ClientOnlyDate({ date, format = 'relative', className }: ClientOnlyDateProps) {
-  const [mounted, setMounted] = useState(false);
-  const [formattedDate, setFormattedDate] = useState('');
+  const dateObj = typeof date === 'string' ? new Date(date) : date;
 
-  useEffect(() => {
-    setMounted(true);
-    
-    if (format === 'relative') {
-      const { formatDistanceToNow } = require('date-fns');
-      const dateObj = typeof date === 'string' ? new Date(date) : date;
-      setFormattedDate(formatDistanceToNow(dateObj, { addSuffix: true }));
-    } else {
-      const dateObj = typeof date === 'string' ? new Date(date) : date;
-      setFormattedDate(dateObj.toLocaleDateString());
-    }
-  }, [date, format]);
-
-  if (!mounted) {
-    return <span className={className} suppressHydrationWarning>...</span>;
+  if (format === 'relative') {
+    return (
+      <span className={className} suppressHydrationWarning>
+        {formatDistanceToNow(dateObj, { addSuffix: true })}
+      </span>
+    );
   }
 
-  return <span className={className} suppressHydrationWarning>{formattedDate}</span>;
+  return (
+    <span className={className} suppressHydrationWarning>
+      {dateObj.toLocaleDateString()}
+    </span>
+  );
 }

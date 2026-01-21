@@ -99,6 +99,7 @@ function calculateCategoryScore(
 }
 
 export function ScanResults({ repoName }: ScanResultsProps) {
+  // ✅ ALL HOOKS AT TOP - BEFORE ANY CONDITIONAL RETURNS
   const { data: report, isLoading, error, refetch, isError } = useQuery({
     queryKey: ['analysis-results', repoName],
     queryFn: () => fetchAnalysisResults(repoName),
@@ -131,6 +132,71 @@ export function ScanResults({ repoName }: ScanResultsProps) {
     enabled: !!report, // Only fetch if we have current report
   });
 
+  // Extract and memoize data BEFORE conditionals
+  const rawIssues = useMemo(() => (report?.issues as AnalysisIssue[]) || [], [report?.issues]);
+  
+  // Calculate category scores - memoize to prevent recalculation
+  const categoryScores = useMemo(() => ({
+    security: calculateCategoryScore(rawIssues, 'security'),
+    performance: calculateCategoryScore(rawIssues, 'performance'),
+    maintainability: calculateCategoryScore(rawIssues, 'maintainability'),
+  }), [rawIssues]);
+
+  const overallScore = report?.overallScore || 0;
+  const recommendations = report?.recommendations || [];
+  const securityScore = categoryScores.security;
+  const performanceScore = categoryScores.performance;
+  const maintainabilityScore = categoryScores.maintainability;
+
+  // Get previous analysis for comparison
+  const previousAnalysis = historyData?.history?.[1];
+  const previousScore = previousAnalysis?.overallScore;
+  const previousSecurityScore = previousAnalysis?.securityScore;
+  const previousPerformanceScore = previousAnalysis?.performanceScore;
+  const previousMaintainabilityScore = previousAnalysis?.maintainabilityScore;
+
+  // Prepare trend data
+  const trendData = useMemo(() => {
+    if (!historyData?.history) return [];
+    return historyData.history.map((item: typeof previousAnalysis) => ({
+      date: item.createdAt,
+      overallScore: item.overallScore,
+      securityScore: item.securityScore || 0,
+      performanceScore: item.performanceScore || 0,
+      maintainabilityScore: item.maintainabilityScore || 0,
+    }));
+  }, [historyData]);
+
+  // Group issues by type - memoized with stable dependencies
+  const issuesByType = useMemo(() => ({
+    security: rawIssues.filter((i: AnalysisIssue) => i.type === 'security'),
+    performance: rawIssues.filter((i: AnalysisIssue) => i.type === 'performance'),
+    maintainability: rawIssues.filter((i: AnalysisIssue) => i.type === 'maintainability'),
+    reliability: rawIssues.filter((i: AnalysisIssue) => i.type === 'reliability'),
+  }), [rawIssues]);
+
+  // Generate insights - memoized with stable dependencies
+  const insights = useMemo(
+    () =>
+      generateInsights(
+        overallScore,
+        previousScore,
+        securityScore,
+        performanceScore,
+        maintainabilityScore,
+        rawIssues.length
+      ),
+    [
+      overallScore,
+      previousScore,
+      securityScore,
+      performanceScore,
+      maintainabilityScore,
+      rawIssues.length,
+    ]
+  );
+
+  // ✅ NOW conditionals and early returns
   // Show loading skeleton
   if (isLoading) {
     return (
@@ -228,43 +294,6 @@ export function ScanResults({ repoName }: ScanResultsProps) {
     );
   }
 
-  const overallScore = report.overallScore || 0;
-  const issues = (report.issues as AnalysisIssue[]) || [];
-  const recommendations = report.recommendations || [];
-
-  // Calculate category scores
-  const securityScore = calculateCategoryScore(issues, 'security');
-  const performanceScore = calculateCategoryScore(issues, 'performance');
-  const maintainabilityScore = calculateCategoryScore(issues, 'maintainability');
-  const reliabilityScore = calculateCategoryScore(issues, 'reliability');
-
-  // Get previous analysis for comparison
-  const previousAnalysis = historyData?.history?.[1]; // Second item (index 1) is previous
-  const previousScore = previousAnalysis?.overallScore;
-  const previousSecurityScore = previousAnalysis?.securityScore;
-  const previousPerformanceScore = previousAnalysis?.performanceScore;
-  const previousMaintainabilityScore = previousAnalysis?.maintainabilityScore;
-
-  // Prepare trend data
-  const trendData = useMemo(() => {
-    if (!historyData?.history) return [];
-    return historyData.history.map((item: typeof previousAnalysis) => ({
-      date: item.createdAt,
-      overallScore: item.overallScore,
-      securityScore: item.securityScore || 0,
-      performanceScore: item.performanceScore || 0,
-      maintainabilityScore: item.maintainabilityScore || 0,
-    }));
-  }, [historyData]);
-
-  // Group issues by type
-  const issuesByType = useMemo(() => ({
-    security: issues.filter((i: AnalysisIssue) => i.type === 'security'),
-    performance: issues.filter((i: AnalysisIssue) => i.type === 'performance'),
-    maintainability: issues.filter((i: AnalysisIssue) => i.type === 'maintainability'),
-    reliability: issues.filter((i: AnalysisIssue) => i.type === 'reliability'),
-  }), [issues]);
-
   const categories = [
     {
       id: 'security',
@@ -309,27 +338,6 @@ export function ScanResults({ repoName }: ScanResultsProps) {
     grade: getGrade(overallScore),
     status: getStatus(overallScore),
   };
-
-  // Generate insights
-  const insights = useMemo(
-    () =>
-      generateInsights(
-        overallScore,
-        previousScore,
-        securityScore,
-        performanceScore,
-        maintainabilityScore,
-        issues.length
-      ),
-    [
-      overallScore,
-      previousScore,
-      securityScore,
-      performanceScore,
-      maintainabilityScore,
-      issues.length,
-    ]
-  );
 
   return (
     <div className="space-y-6">
@@ -426,8 +434,8 @@ export function ScanResults({ repoName }: ScanResultsProps) {
                   </div>
                 ) : (
           <div className="space-y-4">
-            {category.issues.map((issue: AnalysisIssue, index: number) => (
-              <IssueCard key={issue.id || index} issue={issue} index={index} />
+            {category.issues.map((issue: AnalysisIssue) => (
+              <IssueCard key={issue.id || `issue-${issue.title}`} issue={issue} />
             ))}
           </div>
                 )}
@@ -466,7 +474,7 @@ export function ScanResults({ repoName }: ScanResultsProps) {
         <CardContent>
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
             <div className="text-center">
-              <div className="text-2xl font-bold">{issues.length}</div>
+              <div className="text-2xl font-bold">{rawIssues.length}</div>
               <div className="text-sm text-muted-foreground">Issues Found</div>
             </div>
             <div className="text-center">

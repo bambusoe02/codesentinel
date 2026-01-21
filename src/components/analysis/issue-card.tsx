@@ -20,10 +20,10 @@ import { cn } from '@/lib/utils';
 
 interface IssueCardProps {
   issue: AnalysisIssue;
-  index: number;
+  index?: number;
 }
 
-export function IssueCard({ issue, index }: IssueCardProps) {
+export function IssueCard({ issue }: IssueCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
 
   const getSeverityIcon = () => {

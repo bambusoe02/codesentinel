@@ -5,6 +5,7 @@ import { ScanProgress } from '@/components/scan/scan-progress';
 import { ScanResults } from '@/components/scan/scan-results';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ErrorBoundary } from '@/components/error-boundary';
+import { AnalysisPageSkeleton } from '@/components/skeletons/analysis-page-skeleton';
 
 // Force dynamic rendering to avoid build-time issues
 export const dynamic = 'force-dynamic';
@@ -26,24 +27,56 @@ export default async function ScanPage({ params }: ScanPageProps) {
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
-      <ErrorBoundary>
-        <ScanHeader repoName={repoName} />
-
-        <div className="container mx-auto px-4 py-8">
-          <ErrorBoundary>
-            <Suspense fallback={<ScanProgressSkeleton />}>
-              <ScanProgress repoName={repoName} />
-            </Suspense>
-          </ErrorBoundary>
-
-          <ErrorBoundary>
-            <Suspense fallback={<ScanResultsSkeleton />}>
-              <ScanResults repoName={repoName} />
-            </Suspense>
-          </ErrorBoundary>
-        </div>
+      <ErrorBoundary
+        fallback={
+          <div className="container mx-auto p-6">
+            <div className="bg-red-500/10 border border-red-500 rounded-lg p-6">
+              <h2 className="text-red-400 text-xl font-semibold mb-2">
+                Something went wrong
+              </h2>
+              <p className="text-slate-300 mb-4">
+                Failed to load analysis results. Please try again.
+              </p>
+              <button
+                onClick={() => window.location.reload()}
+                className="mt-4 px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition-colors"
+              >
+                Reload Page
+              </button>
+            </div>
+          </div>
+        }
+      >
+        <Suspense fallback={<AnalysisPageSkeleton />}>
+          <ScanPageContent repoName={repoName} />
+        </Suspense>
       </ErrorBoundary>
     </div>
+  );
+}
+
+// Separate component for better Suspense boundary handling
+async function ScanPageContent({ repoName }: { repoName: string }) {
+  return (
+    <>
+      <ErrorBoundary>
+        <ScanHeader repoName={repoName} />
+      </ErrorBoundary>
+
+      <div className="container mx-auto px-4 py-8">
+        <ErrorBoundary>
+          <Suspense fallback={<ScanProgressSkeleton />}>
+            <ScanProgress repoName={repoName} />
+          </Suspense>
+        </ErrorBoundary>
+
+        <ErrorBoundary>
+          <Suspense fallback={<ScanResultsSkeleton />}>
+            <ScanResults repoName={repoName} />
+          </Suspense>
+        </ErrorBoundary>
+      </div>
+    </>
   );
 }
 

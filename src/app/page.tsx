@@ -47,8 +47,9 @@ function ClerkWrapper({ children, fallback }: { children: React.ReactNode; fallb
 
   // Only check availability after mount to avoid hydration mismatch
   // This is intentional - we need to check client-side only
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+  // Using setState in effect is necessary here to prevent hydration mismatch
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setIsAvailable(getClerkAvailable());
   }, []);
 

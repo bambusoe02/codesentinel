@@ -47,31 +47,40 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
   render() {
     if (this.state.hasError) {
       if (this.props.fallback) {
-        return this.props.fallback;
+        return <>{this.props.fallback}</>;
       }
 
       return (
-        <Card className="border-red-200 dark:border-red-800">
-          <CardHeader>
-            <CardTitle className="flex items-center space-x-2 text-red-600">
-              <AlertTriangle className="w-5 h-5" />
-              <span>Something went wrong</span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-muted-foreground mb-4">
-              {this.state.error?.message || 'An unexpected error occurred'}
-            </p>
-            <Button onClick={this.handleReset} variant="outline">
-              <RefreshCw className="w-4 h-4 mr-2" />
-              Try again
-            </Button>
-          </CardContent>
-        </Card>
+        <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950 p-6">
+          <Card className="border-red-200 dark:border-red-800 max-w-md w-full">
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2 text-red-600">
+                <AlertTriangle className="w-5 h-5" />
+                <span>Something went wrong</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-muted-foreground mb-4">
+                {this.state.error?.message || 'An unexpected error occurred'}
+              </p>
+              <Button
+                onClick={() => {
+                  this.handleReset();
+                  window.location.reload();
+                }}
+                variant="outline"
+                className="w-full"
+              >
+                <RefreshCw className="w-4 h-4 mr-2" />
+                Reload Page
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
       );
     }
 
-    return this.props.children;
+    return <>{this.props.children}</>;
   }
 }
 
