@@ -2,7 +2,7 @@ import { pgTable, text, integer, timestamp, jsonb, uuid } from 'drizzle-orm/pg-c
 import { relations } from 'drizzle-orm';
 
 // Type definitions for JSON fields
-interface AnalysisIssue {
+export interface AnalysisIssue {
   id: string;
   type: 'security' | 'performance' | 'maintainability' | 'reliability';
   severity: 'low' | 'medium' | 'high' | 'critical';

@@ -4,6 +4,7 @@ import { users } from '@/lib/schema';
 import { eq } from 'drizzle-orm';
 import { NextResponse, NextRequest } from 'next/server';
 import { encrypt, isEncryptionConfigured } from '@/lib/encryption';
+import { logger } from '@/lib/logger';
 
 export async function POST(request: NextRequest) {
   try {

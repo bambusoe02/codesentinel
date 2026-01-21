@@ -14,7 +14,7 @@ export function ClerkProviderWrapper({ children, publishableKey }: ClerkProvider
     return (
       <ClerkProvider 
         publishableKey={publishableKey}
-        fallbackRedirectUrl="/dashboard"
+        signInFallbackRedirectUrl="/dashboard"
       >
         {children}
       </ClerkProvider>
