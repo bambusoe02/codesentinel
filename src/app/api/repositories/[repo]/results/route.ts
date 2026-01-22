@@ -76,7 +76,15 @@ export async function GET(
       .limit(1);
 
     if (reports.length === 0) {
-      return NextResponse.json({ error: 'No analysis found' }, { status: 404 });
+      logger.info('No analysis found for repository', {
+        repoFullName,
+        repositoryId: repo.id,
+        userId: user.id,
+      });
+      return NextResponse.json({ 
+        error: 'No analysis found',
+        message: 'Analysis has not been run yet or is still in progress',
+      }, { status: 404 });
     }
 
     const report = reports[0];

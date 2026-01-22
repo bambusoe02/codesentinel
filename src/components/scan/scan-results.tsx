@@ -33,19 +33,53 @@ interface ScanResultsProps {
 }
 
 async function fetchAnalysisResults(repoName: string) {
-  const response = await fetch(`/api/repositories/${encodeURIComponent(repoName)}/results`);
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    throw new Error(errorData.error || `Failed to fetch analysis results: ${response.status}`);
+  try {
+    const encodedRepoName = encodeURIComponent(repoName);
+    const url = `/api/repositories/${encodedRepoName}/results`;
+    
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      cache: 'no-store', // Always fetch fresh data
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      // Handle 404 gracefully - analysis might not exist yet
+      if (response.status === 404) {
+        console.log('Analysis not found (404) - this is normal if analysis is in progress');
+        throw new Error('ANALYSIS_NOT_FOUND'); // Special error code
+      }
+      
+      const errorMessage = data.error || data.details || `Failed to fetch analysis results: ${response.status}`;
+      console.error('Failed to fetch analysis results:', {
+        status: response.status,
+        error: errorMessage,
+        data,
+      });
+      throw new Error(errorMessage);
+    }
+
+    if (!data.report) {
+      console.error('API returned success but no report:', data);
+      throw new Error('Invalid response: report missing');
+    }
+
+    console.log('Fetched analysis results successfully:', {
+      reportId: data.report.id,
+      isAIPowered: data.report.isAIPowered,
+      overallScore: data.report.overallScore,
+      createdAt: data.report.createdAt,
+    });
+
+    return data.report;
+  } catch (error) {
+    console.error('Error in fetchAnalysisResults:', error);
+    throw error;
   }
-  const data = await response.json();
-  console.log('Fetched analysis results:', {
-    hasReport: !!data.report,
-    reportId: data.report?.id,
-    isAIPowered: data.report?.isAIPowered,
-    overallScore: data.report?.overallScore,
-  });
-  return data.report;
 }
 
 async function fetchAnalysisHistory(repoName: string, range: string = '30d') {
@@ -112,25 +146,31 @@ export function ScanResults({ repoName }: ScanResultsProps) {
     queryKey: ['analysis-results', repoName],
     queryFn: () => fetchAnalysisResults(repoName),
     retry: (failureCount, error: unknown) => {
+      // Don't retry on 404 (analysis not found) - this is expected
       if (error && typeof error === 'object' && 'message' in error) {
         const message = String(error.message);
-        if (message.includes('404') || message.includes('not found')) {
-          return false;
+        if (message === 'ANALYSIS_NOT_FOUND' || message.includes('404') || message.includes('not found')) {
+          return false; // Don't retry - analysis doesn't exist yet
         }
       }
-      return failureCount < 2;
+      // Retry up to 3 times for other errors
+      return failureCount < 3;
     },
-    retryDelay: 1000,
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 3000),
     refetchInterval: (query) => {
-      // Only poll if no data exists and no error
-      if (query.state.error) return false;
-      if (query.state.data) return false;
-      // Poll every 3 seconds while waiting for analysis to complete
-      return 3000;
+      // Only poll if we got ANALYSIS_NOT_FOUND (404) - analysis might be in progress
+      if (query.state.error && 
+          typeof query.state.error === 'object' && 
+          'message' in query.state.error &&
+          String(query.state.error.message) === 'ANALYSIS_NOT_FOUND') {
+        // Poll every 5 seconds while waiting for analysis to complete
+        return 5000;
+      }
+      // Don't poll if we have data or other errors
+      return false;
     },
-    // Ensure we get fresh data after re-analysis
-    // Refresh data after re-analysis
-    staleTime: 1000, // Consider data stale after 1 second
+    staleTime: 0, // Always consider data stale - fetch fresh on mount
+    gcTime: 5 * 60 * 1000, // Keep in cache for 5 minutes
   });
 
   // Fetch analysis history for comparison and trends
@@ -158,28 +198,22 @@ export function ScanResults({ repoName }: ScanResultsProps) {
   
   // Check if analysis was AI-powered (from report metadata or default to false)
   // isAIPowered is stored as integer (0 or 1) in database
-  const isAIPowered = 
-    report?.isAIPowered === 1 || 
-    report?.isAIPowered === true ||
-    (report as any)?.isAIPowered === 1 ||
-    (report as any)?.isAIPowered === true;
+  const isAIPowered = report 
+    ? (report.isAIPowered === 1 || 
+       report.isAIPowered === true ||
+       (report as any)?.isAIPowered === 1 ||
+       (report as any)?.isAIPowered === true)
+    : false;
   
-  // Debug logging
-  if (typeof window !== 'undefined' && report) {
-    console.log('Analysis mode debug:', {
+  // Debug logging (only in development)
+  if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development' && report) {
+    console.log('✅ Analysis loaded:', {
+      reportId: report.id,
       isAIPowered,
       reportIsAIPowered: report.isAIPowered,
-      reportIsAIPoweredType: typeof report.isAIPowered,
-      reportId: report.id,
       overallScore: report.overallScore,
+      issuesCount: Array.isArray(report.issues) ? report.issues.length : 0,
       createdAt: report.createdAt,
-    });
-  } else if (typeof window !== 'undefined' && !report) {
-    console.warn('Analysis mode debug: report is undefined!', {
-      isLoading,
-      isError,
-      error,
-      queryData: { data: report },
     });
   }
 
@@ -265,20 +299,28 @@ export function ScanResults({ repoName }: ScanResultsProps) {
     );
   }
 
-  // Error handling
+  // Error handling - check for ANALYSIS_NOT_FOUND (404) which means analysis is in progress
   if (isError && error && typeof error === 'object' && 'message' in error) {
     const errorMessage = String(error.message);
-    if (errorMessage.includes('404') || errorMessage.includes('not found')) {
+    if (errorMessage === 'ANALYSIS_NOT_FOUND' || errorMessage.includes('404') || errorMessage.includes('not found')) {
       return (
         <Card>
           <CardContent className="p-6">
             <div className="text-center py-8">
-              <Clock className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
+              <Clock className="w-12 h-12 mx-auto text-muted-foreground mb-4 animate-spin" />
               <h3 className="text-lg font-medium mb-2">Analysis in progress</h3>
               <p className="text-muted-foreground mb-4">
                 The analysis for this repository is still running. Results will appear here when complete.
+                <br />
+                <span className="text-sm">This page will automatically refresh...</span>
               </p>
-              <Button onClick={() => refetch()} variant="outline">
+              <Button 
+                onClick={() => {
+                  queryClient.invalidateQueries({ queryKey: ['analysis-results', repoName] });
+                  refetch();
+                }} 
+                variant="outline"
+              >
                 <RefreshCw className="w-4 h-4 mr-2" />
                 Check again
               </Button>
