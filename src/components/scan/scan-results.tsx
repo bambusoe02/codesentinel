@@ -35,9 +35,16 @@ interface ScanResultsProps {
 async function fetchAnalysisResults(repoName: string) {
   const response = await fetch(`/api/repositories/${encodeURIComponent(repoName)}/results`);
   if (!response.ok) {
-    throw new Error('Failed to fetch analysis results');
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.error || `Failed to fetch analysis results: ${response.status}`);
   }
   const data = await response.json();
+  console.log('Fetched analysis results:', {
+    hasReport: !!data.report,
+    reportId: data.report?.id,
+    isAIPowered: data.report?.isAIPowered,
+    overallScore: data.report?.overallScore,
+  });
   return data.report;
 }
 
@@ -157,13 +164,22 @@ export function ScanResults({ repoName }: ScanResultsProps) {
     (report as any)?.isAIPowered === 1 ||
     (report as any)?.isAIPowered === true;
   
-  // Debug logging (remove in production)
-  if (typeof window !== 'undefined') {
+  // Debug logging
+  if (typeof window !== 'undefined' && report) {
     console.log('Analysis mode debug:', {
       isAIPowered,
-      reportIsAIPowered: report?.isAIPowered,
-      reportIsAIPoweredType: typeof report?.isAIPowered,
-      fullReport: report,
+      reportIsAIPowered: report.isAIPowered,
+      reportIsAIPoweredType: typeof report.isAIPowered,
+      reportId: report.id,
+      overallScore: report.overallScore,
+      createdAt: report.createdAt,
+    });
+  } else if (typeof window !== 'undefined' && !report) {
+    console.warn('Analysis mode debug: report is undefined!', {
+      isLoading,
+      isError,
+      error,
+      queryData: { data: report },
     });
   }
 
