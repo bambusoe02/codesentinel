@@ -113,20 +113,44 @@ export async function POST(
       commits
     );
 
-    const analysisResult = await analyzer.analyze();
+    let analysisResult;
+    try {
+      analysisResult = await analyzer.analyze();
+    } catch (analysisError) {
+      logger.error('Analysis failed completely', analysisError);
+      return NextResponse.json(
+        {
+          error: 'Failed to analyze repository',
+          details: analysisError instanceof Error ? analysisError.message : 'Unknown error',
+        },
+        { status: 500 }
+      );
+    }
 
     // Save analysis report to database
-    const [report] = await db
-      .insert(analysisReports)
-      .values({
-        userId: user.id,
-        repositoryId: repo.id,
-        overallScore: analysisResult.overallScore,
-        issues: analysisResult.issues,
-        recommendations: analysisResult.recommendations,
-        isAIPowered: analysisResult.isAIPowered ? 1 : 0,
-      })
-      .returning();
+    let report;
+    try {
+      [report] = await db
+        .insert(analysisReports)
+        .values({
+          userId: user.id,
+          repositoryId: repo.id,
+          overallScore: analysisResult.overallScore,
+          issues: analysisResult.issues,
+          recommendations: analysisResult.recommendations,
+          isAIPowered: analysisResult.isAIPowered ? 1 : 0,
+        })
+        .returning();
+    } catch (dbError) {
+      logger.error('Failed to save analysis report to database', dbError);
+      return NextResponse.json(
+        {
+          error: 'Failed to save analysis results',
+          details: dbError instanceof Error ? dbError.message : 'Database error',
+        },
+        { status: 500 }
+      );
+    }
 
     return NextResponse.json({
       success: true,

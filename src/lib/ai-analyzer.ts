@@ -82,21 +82,59 @@ export class AICodeAnalyzer {
       const prompt = this.buildAnalysisPrompt(codeSnippets, repoContext);
 
       // Call Claude with code analysis prompt
-      // Using claude-3-5-sonnet-20241022 (latest stable) or claude-3-opus-20240229 for best results
-      const message = await this.client.messages.create({
-        model: 'claude-3-5-sonnet-20241022',
-        max_tokens: 4000,
-        messages: [
-          {
-            role: 'user',
-            content: prompt,
-          },
-        ],
-      });
+      // Try claude-3-5-sonnet-20241022 first, fallback to claude-3-sonnet-20240229
+      let message;
+      try {
+        message = await this.client.messages.create({
+          model: 'claude-3-5-sonnet-20241022',
+          max_tokens: 4000,
+          messages: [
+            {
+              role: 'user',
+              content: prompt,
+            },
+          ],
+        });
+      } catch (modelError: any) {
+        // If model not found, try older version
+        if (modelError?.status === 400 || modelError?.message?.includes('model')) {
+          logger.warn('Claude 3.5 Sonnet not available, trying Claude 3 Sonnet', { error: modelError });
+          message = await this.client.messages.create({
+            model: 'claude-3-sonnet-20240229',
+            max_tokens: 4000,
+            messages: [
+              {
+                role: 'user',
+                content: prompt,
+              },
+            ],
+          });
+        } else {
+          logger.error('Claude API call failed', modelError, {
+            errorMessage: modelError?.message,
+            errorStatus: modelError?.status,
+            errorType: modelError?.type,
+          });
+          throw modelError;
+        }
+      }
 
       // Extract text from response
+      if (!message.content || message.content.length === 0) {
+        throw new Error('Empty response from Claude API');
+      }
+
       const responseText =
         message.content[0].type === 'text' ? message.content[0].text : '';
+
+      if (!responseText || responseText.trim().length === 0) {
+        throw new Error('Empty text in Claude API response');
+      }
+
+      logger.info('Claude API response received', {
+        responseLength: responseText.length,
+        responsePreview: responseText.substring(0, 200),
+      });
 
       // Parse AI response into structured format
       const aiResult = this.parseAIResponse(responseText);
@@ -209,26 +247,45 @@ Focus on actionable, high-impact findings.`;
     // Remove markdown code blocks if present
     let cleaned = response.trim();
     cleaned = cleaned.replace(/```json\n?/g, '');
-    cleaned = cleaned.replace(/\n?```/g, '');
+    cleaned = cleaned.replace(/```\n?/g, '');
+    cleaned = cleaned.replace(/^```/g, '');
+    cleaned = cleaned.replace(/```$/g, '');
     cleaned = cleaned.trim();
+
+    // Try to extract JSON if wrapped in text
+    const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+      cleaned = jsonMatch[0];
+    }
 
     try {
       const parsed = JSON.parse(cleaned);
 
-      // Validate structure
-      if (
-        !parsed.securityIssues ||
-        !parsed.performanceIssues ||
-        !parsed.qualityIssues ||
-        !parsed.architectureIssues
-      ) {
-        throw new Error('Invalid AI response structure');
-      }
+      // Validate structure - make arrays optional with defaults
+      const result: AIAnalysisResponse = {
+        securityIssues: Array.isArray(parsed.securityIssues) ? parsed.securityIssues : [],
+        performanceIssues: Array.isArray(parsed.performanceIssues) ? parsed.performanceIssues : [],
+        qualityIssues: Array.isArray(parsed.qualityIssues) ? parsed.qualityIssues : [],
+        architectureIssues: Array.isArray(parsed.architectureIssues) ? parsed.architectureIssues : [],
+        overallAssessment: parsed.overallAssessment || 'Analysis completed',
+        topRecommendations: Array.isArray(parsed.topRecommendations) ? parsed.topRecommendations : [],
+      };
 
-      return parsed as AIAnalysisResponse;
+      logger.info('AI response parsed successfully', {
+        securityIssues: result.securityIssues.length,
+        performanceIssues: result.performanceIssues.length,
+        qualityIssues: result.qualityIssues.length,
+        architectureIssues: result.architectureIssues.length,
+      });
+
+      return result;
     } catch (error) {
-      logger.error('Failed to parse AI response', error, { response: cleaned.substring(0, 500) });
-      throw new Error('Invalid AI response format');
+      logger.error('Failed to parse AI response', error, {
+        responseLength: cleaned.length,
+        responsePreview: cleaned.substring(0, 1000),
+        errorMessage: error instanceof Error ? error.message : 'Unknown error',
+      });
+      throw new Error(`Invalid AI response format: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 
