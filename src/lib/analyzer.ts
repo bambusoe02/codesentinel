@@ -1,4 +1,6 @@
 import { GitHubFile, GitHubRepoStats, GitHubCommit } from './github';
+import { AICodeAnalyzer } from './ai-analyzer';
+import { logger } from './logger';
 
 export interface AnalysisResult {
   overallScore: number;
@@ -9,6 +11,7 @@ export interface AnalysisResult {
   issues: AnalysisIssue[];
   recommendations: Recommendation[];
   metrics: RepositoryMetrics;
+  isAIPowered?: boolean; // Indicates if AI analysis was used
 }
 
 export interface AnalysisIssue {
@@ -62,11 +65,40 @@ export class CodeAnalyzer {
   }
 
   async analyze(): Promise<AnalysisResult> {
-    // Simulate AI analysis - in real implementation, this would call an AI service
-    const issues = await this.identifyIssues();
-    const recommendations = this.generateRecommendations(issues);
+    // Calculate metrics first (needed for both AI and rule-based)
     const metrics = this.calculateMetrics();
 
+    // Try AI-powered analysis first if available
+    if (AICodeAnalyzer.isAvailable() && process.env.ANTHROPIC_API_KEY) {
+      try {
+        const aiAnalyzer = new AICodeAnalyzer(process.env.ANTHROPIC_API_KEY);
+        const repoContext = {
+          name: this.repoName,
+          language: this.stats.languages ? Object.keys(this.stats.languages)[0] : null,
+          stars: 0, // Not available in stats
+          contributors: this.stats.contributors,
+          linesOfCode: this.stats.linesOfCode,
+          filesCount: this.stats.filesCount,
+        };
+
+        const { result, isAIPowered } = await aiAnalyzer.analyzeCode(
+          this.files,
+          repoContext,
+          metrics
+        );
+
+        logger.info('AI analysis completed successfully', { isAIPowered });
+        return { ...result, isAIPowered };
+      } catch (error) {
+        logger.warn('AI analysis failed, falling back to rule-based analysis', { error });
+        // Fall through to rule-based analysis
+      }
+    }
+
+    // Fallback to rule-based analysis
+    logger.info('Using rule-based analysis');
+    const issues = await this.identifyIssues();
+    const recommendations = this.generateRecommendations(issues);
     const scores = this.calculateScores(issues, metrics);
 
     return {
@@ -78,6 +110,7 @@ export class CodeAnalyzer {
       issues,
       recommendations,
       metrics,
+      isAIPowered: false,
     };
   }
 

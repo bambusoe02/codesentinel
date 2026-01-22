@@ -147,6 +147,9 @@ export function ScanResults({ repoName }: ScanResultsProps) {
   const securityScore = categoryScores.security;
   const performanceScore = categoryScores.performance;
   const maintainabilityScore = categoryScores.maintainability;
+  
+  // Check if analysis was AI-powered (from report metadata or default to false)
+  const isAIPowered = (report as any)?.isAIPowered ?? false;
 
   // Get previous analysis for comparison
   const previousAnalysis = historyData?.history?.[1];
@@ -345,6 +348,15 @@ export function ScanResults({ repoName }: ScanResultsProps) {
       <Card>
         <CardContent className="p-6">
           <div className="text-center">
+            {/* AI Mode Badge */}
+            <div className="flex justify-center mb-2">
+              <Badge
+                variant={isAIPowered ? 'default' : 'secondary'}
+                className={isAIPowered ? 'bg-purple-600 hover:bg-purple-700' : ''}
+              >
+                {isAIPowered ? '🤖 AI Analysis' : '📋 Rule-based'}
+              </Badge>
+            </div>
             <div className="inline-flex items-center justify-center w-24 h-24 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 mb-4 transition-all duration-300 hover:scale-110 hover:shadow-lg shadow-purple-500/50">
               <span className="text-2xl font-bold text-white transition-all duration-500">{overall.score}</span>
             </div>

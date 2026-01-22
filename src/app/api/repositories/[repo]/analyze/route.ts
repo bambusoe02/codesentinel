@@ -131,6 +131,7 @@ export async function POST(
       success: true,
       reportId: report.id,
       analysis: analysisResult,
+      isAIPowered: analysisResult.isAIPowered ?? false,
     });
   } catch (error) {
     logger.error('Error analyzing repository', error);

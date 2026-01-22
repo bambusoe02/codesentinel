@@ -7,3 +7,8 @@ NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL=/dashboard
 NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL=/dashboard
 DATABASE_URL=postgresql://...
 ENCRYPTION_KEY=your_32_character_encryption_key_here
+
+# Anthropic Claude AI (optional - enables AI-powered code analysis)
+# If not provided, falls back to rule-based analysis
+# Get your API key from: https://console.anthropic.com/
+ANTHROPIC_API_KEY=sk-ant-api03-...
