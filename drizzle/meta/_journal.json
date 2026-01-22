@@ -8,6 +8,13 @@
       "when": 1768850376054,
       "tag": "0000_oval_mentallo",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1769112962999,
+      "tag": "0001_minor_caretaker",
+      "breakpoints": true
     }
   ]
 }

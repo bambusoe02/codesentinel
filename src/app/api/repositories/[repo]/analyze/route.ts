@@ -124,6 +124,7 @@ export async function POST(
         overallScore: analysisResult.overallScore,
         issues: analysisResult.issues,
         recommendations: analysisResult.recommendations,
+        isAIPowered: analysisResult.isAIPowered ? 1 : 0,
       })
       .returning();
 

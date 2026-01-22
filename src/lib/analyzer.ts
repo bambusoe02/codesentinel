@@ -68,10 +68,22 @@ export class CodeAnalyzer {
     // Calculate metrics first (needed for both AI and rule-based)
     const metrics = this.calculateMetrics();
 
+    // Check if AI is available
+    const hasAPIKey = !!process.env.ANTHROPIC_API_KEY;
+    const isAIAvailable = AICodeAnalyzer.isAvailable();
+    
+    logger.info('Analysis mode check', {
+      hasAPIKey,
+      isAIAvailable,
+      apiKeyLength: hasAPIKey ? process.env.ANTHROPIC_API_KEY?.length : 0,
+      apiKeyPrefix: hasAPIKey ? process.env.ANTHROPIC_API_KEY?.substring(0, 10) + '...' : 'none',
+    });
+
     // Try AI-powered analysis first if available
-    if (AICodeAnalyzer.isAvailable() && process.env.ANTHROPIC_API_KEY) {
+    if (isAIAvailable && hasAPIKey) {
       try {
-        const aiAnalyzer = new AICodeAnalyzer(process.env.ANTHROPIC_API_KEY);
+        logger.info('Attempting AI-powered analysis', { repoName: this.repoName });
+        const aiAnalyzer = new AICodeAnalyzer(process.env.ANTHROPIC_API_KEY!);
         const repoContext = {
           name: this.repoName,
           language: this.stats.languages ? Object.keys(this.stats.languages)[0] : null,

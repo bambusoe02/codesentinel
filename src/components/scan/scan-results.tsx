@@ -149,7 +149,8 @@ export function ScanResults({ repoName }: ScanResultsProps) {
   const maintainabilityScore = categoryScores.maintainability;
   
   // Check if analysis was AI-powered (from report metadata or default to false)
-  const isAIPowered = (report as any)?.isAIPowered ?? false;
+  // isAIPowered is stored as integer (0 or 1) in database
+  const isAIPowered = report?.isAIPowered === 1 || (report as any)?.isAIPowered === true;
 
   // Get previous analysis for comparison
   const previousAnalysis = historyData?.history?.[1];
