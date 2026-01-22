@@ -150,7 +150,21 @@ export function ScanResults({ repoName }: ScanResultsProps) {
   
   // Check if analysis was AI-powered (from report metadata or default to false)
   // isAIPowered is stored as integer (0 or 1) in database
-  const isAIPowered = report?.isAIPowered === 1 || (report as any)?.isAIPowered === true;
+  const isAIPowered = 
+    report?.isAIPowered === 1 || 
+    report?.isAIPowered === true ||
+    (report as any)?.isAIPowered === 1 ||
+    (report as any)?.isAIPowered === true;
+  
+  // Debug logging (remove in production)
+  if (typeof window !== 'undefined') {
+    console.log('Analysis mode debug:', {
+      isAIPowered,
+      reportIsAIPowered: report?.isAIPowered,
+      reportIsAIPoweredType: typeof report?.isAIPowered,
+      fullReport: report,
+    });
+  }
 
   // Get previous analysis for comparison
   const previousAnalysis = historyData?.history?.[1];

@@ -99,8 +99,12 @@ export class CodeAnalyzer {
           metrics
         );
 
-        logger.info('AI analysis completed successfully', { isAIPowered });
-        return { ...result, isAIPowered };
+        logger.info('AI analysis completed successfully', { 
+          isAIPowered,
+          issuesCount: result.issues.length,
+          repoName: this.repoName,
+        });
+        return { ...result, isAIPowered: true }; // Explicitly set to true
       } catch (error) {
         logger.warn('AI analysis failed, falling back to rule-based analysis', { error });
         // Fall through to rule-based analysis
