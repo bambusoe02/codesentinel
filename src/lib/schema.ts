@@ -65,7 +65,7 @@ export const analysisReports = pgTable('analysis_reports', {
   issues: jsonb('issues').$type<AnalysisIssue[]>(),
   recommendations: jsonb('recommendations').$type<Recommendation[]>(),
   shareToken: text('share_token'),
-  isAIPowered: integer('is_ai_powered').default(0), // 0 = false, 1 = true (boolean as integer for compatibility)
+  isAIPowered: integer('is_ai_powered').notNull().default(0), // 0 = false, 1 = true (boolean as integer for compatibility)
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });
 

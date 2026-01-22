@@ -79,7 +79,21 @@ export async function GET(
       return NextResponse.json({ error: 'No analysis found' }, { status: 404 });
     }
 
-    return NextResponse.json({ report: reports[0] });
+    const report = reports[0];
+    
+    // Ensure isAIPowered is included in response
+    logger.info('Returning analysis report', {
+      reportId: report.id,
+      isAIPowered: report.isAIPowered,
+      isAIPoweredType: typeof report.isAIPowered,
+    });
+
+    return NextResponse.json({ 
+      report: {
+        ...report,
+        isAIPowered: report.isAIPowered ?? 0, // Ensure it's always a number
+      }
+    });
   } catch (error) {
     logger.error('Error fetching analysis results', error);
     return NextResponse.json(

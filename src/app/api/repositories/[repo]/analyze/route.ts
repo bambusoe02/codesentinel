@@ -130,17 +130,32 @@ export async function POST(
     // Save analysis report to database
     let report;
     try {
+      // Ensure isAIPowered is always a number (0 or 1)
+      const isAIPoweredValue = analysisResult.isAIPowered === true ? 1 : 0;
+      
+      logger.info('Saving analysis report', {
+        overallScore: analysisResult.overallScore,
+        issuesCount: analysisResult.issues?.length || 0,
+        isAIPowered: isAIPoweredValue,
+        isAIPoweredOriginal: analysisResult.isAIPowered,
+      });
+
       [report] = await db
         .insert(analysisReports)
         .values({
           userId: user.id,
           repositoryId: repo.id,
           overallScore: analysisResult.overallScore,
-          issues: analysisResult.issues,
-          recommendations: analysisResult.recommendations,
-          isAIPowered: analysisResult.isAIPowered ? 1 : 0,
+          issues: analysisResult.issues || [],
+          recommendations: analysisResult.recommendations || [],
+          isAIPowered: isAIPoweredValue,
         })
         .returning();
+      
+      logger.info('Analysis report saved successfully', {
+        reportId: report.id,
+        isAIPowered: report.isAIPowered,
+      });
     } catch (dbError) {
       logger.error('Failed to save analysis report to database', dbError);
       return NextResponse.json(
