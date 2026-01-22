@@ -21,7 +21,7 @@ import {
   RefreshCw,
   CheckCircle2,
 } from 'lucide-react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 
 // Lazy load heavy components
 const TrendChart = lazy(() =>
@@ -100,6 +100,7 @@ function calculateCategoryScore(
 
 export function ScanResults({ repoName }: ScanResultsProps) {
   // ✅ ALL HOOKS AT TOP - BEFORE ANY CONDITIONAL RETURNS
+  const queryClient = useQueryClient();
   const { data: report, isLoading, error, refetch, isError } = useQuery({
     queryKey: ['analysis-results', repoName],
     queryFn: () => fetchAnalysisResults(repoName),
@@ -282,7 +283,10 @@ export function ScanResults({ repoName }: ScanResultsProps) {
             <p className="text-muted-foreground mb-4">
               {error instanceof Error ? error.message : 'Failed to load analysis results'}
             </p>
-            <Button onClick={() => refetch()}>
+            <Button onClick={() => {
+              refetch();
+              window.location.reload();
+            }}>
               <RefreshCw className="w-4 h-4 mr-2" />
               Try again
             </Button>
@@ -302,7 +306,10 @@ export function ScanResults({ repoName }: ScanResultsProps) {
             <p className="text-muted-foreground mb-4">
               Start an analysis to see results here.
             </p>
-            <Button onClick={() => refetch()} variant="outline">
+            <Button onClick={() => {
+              refetch();
+              queryClient.invalidateQueries({ queryKey: ['analysis-results', repoName] });
+            }} variant="outline">
               <RefreshCw className="w-4 h-4 mr-2" />
               Refresh
             </Button>
