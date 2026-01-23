@@ -15,6 +15,13 @@
       "when": 1769112962999,
       "tag": "0001_minor_caretaker",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1769146904408,
+      "tag": "0002_stiff_the_phantom",
+      "breakpoints": true
     }
   ]
 }

@@ -1,0 +1,1 @@
+ALTER TABLE "analysis_reports" ALTER COLUMN "is_ai_powered" SET NOT NULL;
