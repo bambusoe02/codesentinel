@@ -1,7 +1,7 @@
 import { auth, clerkClient } from '@clerk/nextjs/server';
 import { db } from '@/lib/db';
-import { users } from '@/lib/schema';
-import { eq, sql } from 'drizzle-orm';
+import { users, repositories, analysisReports } from '@/lib/schema';
+import { eq } from 'drizzle-orm';
 import { NextResponse } from 'next/server';
 import { encrypt, isEncryptionConfigured } from '@/lib/encryption';
 import { logger } from '@/lib/logger';
@@ -92,19 +92,21 @@ export async function POST() {
         // Update id from UUID to Clerk userId
         // This requires updating users table and all related tables
         try {
-          // First, update repositories.user_id
-          await db.execute(sql`
-            UPDATE repositories 
-            SET user_id = ${userId} 
-            WHERE user_id = ${existingUserRecord.id}
-          `);
+          // First, update repositories.user_id using Drizzle ORM
+          await db
+            .update(repositories)
+            .set({ userId: userId })
+            .where(eq(repositories.userId, existingUserRecord.id));
           
-          // Then, update analysis_reports.user_id
-          await db.execute(sql`
-            UPDATE analysis_reports 
-            SET user_id = ${userId} 
-            WHERE user_id = ${existingUserRecord.id}
-          `);
+          console.log('Updated repositories.user_id from UUID to Clerk userId');
+          
+          // Then, update analysis_reports.user_id using Drizzle ORM
+          await db
+            .update(analysisReports)
+            .set({ userId: userId })
+            .where(eq(analysisReports.userId, existingUserRecord.id));
+          
+          console.log('Updated analysis_reports.user_id from UUID to Clerk userId');
           
           // Finally, update users.id
           await db
@@ -114,14 +116,16 @@ export async function POST() {
           
           console.log('Successfully updated user.id from UUID to Clerk userId');
         } catch (migrationError: unknown) {
-          const error = migrationError as { message?: string; code?: string };
+          const error = migrationError as { message?: string; code?: string; detail?: string };
           console.error('Failed to migrate user.id from UUID to Clerk userId:', {
             error: error?.message,
             code: error?.code,
+            detail: error?.detail,
           });
           logger.error('Failed to migrate user.id from UUID to Clerk userId', {
             error: error?.message,
             code: error?.code,
+            detail: error?.detail,
             oldId: existingUserRecord.id,
             newId: userId,
           });
