@@ -146,6 +146,27 @@ export async function POST(
     // Note: id and createdAt are auto-generated (serial and defaultNow)
     // qualityScore uses maintainabilityScore as fallback (they're similar concepts)
     try {
+      // Validate required fields before insert
+      if (!analysisResult.overallScore && analysisResult.overallScore !== 0) {
+        throw new Error('overallScore is required but was null/undefined');
+      }
+
+      console.log('=== ATTEMPTING ANALYSIS INSERT (FIRST ATTEMPT) ===');
+      console.log('Insert values:', {
+        userId: user.id,
+        repositoryId: repo.id,
+        overallScore: analysisResult.overallScore,
+        securityScore: analysisResult.securityScore ?? null,
+        qualityScore: analysisResult.maintainabilityScore ?? null,
+        performanceScore: analysisResult.performanceScore ?? null,
+        maintainabilityScore: analysisResult.maintainabilityScore ?? null,
+        techDebtScore: analysisResult.techDebtScore ?? null,
+        reportDataLength: analysisResult.issues?.length || 0,
+        recommendationsLength: analysisResult.recommendations?.length || 0,
+        shareToken: shareToken,
+        isAiPowered: isAIPoweredValue,
+      });
+
       [report] = await db
        .insert(analysisReports)
        .values({
@@ -167,6 +188,7 @@ export async function POST(
       })
       .returning();
 
+      console.log('✅ Analysis report saved successfully (first attempt)');
       logger.info('Analysis report saved successfully with isAiPowered', {
         reportId: report.id,
         isAiPowered: report.isAiPowered,
@@ -183,6 +205,13 @@ export async function POST(
       const errorMessage = error?.message || '';
       const errorCode = error?.code || '';
 
+      console.error('=== FIRST INSERT ATTEMPT FAILED ===');
+      console.error('Error message:', errorMessage);
+      console.error('Error code:', errorCode);
+      console.error('Error detail:', error?.detail);
+      console.error('Error constraint:', error?.constraint);
+      console.error('Error hint:', error?.hint);
+
       logger.warn('First insert attempt failed, retrying without optional fields', {
         message: errorMessage,
         code: errorCode,
@@ -193,10 +222,25 @@ export async function POST(
       // Retry without optional fields - let database use defaults
       // This handles ANY error, not just column-related ones
       try {
+        // Validate required fields before retry
+        if (!analysisResult.overallScore && analysisResult.overallScore !== 0) {
+          throw new Error('overallScore is required but was null/undefined');
+        }
+
+        console.log('=== RETRYING INSERT (SECOND ATTEMPT - MINIMAL FIELDS) ===');
+        console.log('Retry values:', {
+          userId: user.id,
+          repositoryId: repo.id,
+          overallScore: analysisResult.overallScore,
+          reportDataLength: analysisResult.issues?.length || 0,
+          recommendationsLength: analysisResult.recommendations?.length || 0,
+          shareToken: shareToken,
+        });
+
         [report] = await db
         .insert(analysisReports)
         .values({
-          userId: user.id,
+          userId: user.id, // ✅ REQUIRED - must be included
           repositoryId: repo.id,
           overallScore: analysisResult.overallScore,
           // Omit optional score fields - they may not exist in DB
@@ -207,21 +251,33 @@ export async function POST(
         })
         .returning();
 
+        console.log('✅ Analysis report saved successfully (second attempt)');
         logger.info('Analysis report saved successfully without optional fields (using defaults)', {
           reportId: report.id,
           isAiPowered: report.isAiPowered ?? 0,
         });
       } catch (retryError: unknown) {
-        const retryErr = retryError as { message?: string; code?: string; detail?: string };
+        const retryErr = retryError as { message?: string; code?: string; detail?: string; constraint?: string };
+        
+        console.error('=== BOTH INSERT ATTEMPTS FAILED ===');
+        console.error('First attempt error:', errorMessage);
+        console.error('Retry attempt error:', retryErr?.message);
+        console.error('Retry error detail:', retryErr?.detail);
+        console.error('Retry error code:', retryErr?.code);
+        console.error('Retry error constraint:', retryErr?.constraint);
+        
         logger.error('Both insert attempts failed', {
           firstAttempt: {
             message: errorMessage,
             code: errorCode,
+            detail: error?.detail,
+            constraint: error?.constraint,
           },
           retryAttempt: {
             message: retryErr?.message,
             code: retryErr?.code,
             detail: retryErr?.detail,
+            constraint: retryErr?.constraint,
           },
         });
 
