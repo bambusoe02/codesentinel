@@ -68,6 +68,7 @@ export async function GET(
     }
 
     // Get latest analysis report
+    // Use defensive approach: try normal select, fallback to explicit column selection if needed
     let reports;
     try {
       reports = await db
@@ -89,16 +90,42 @@ export async function GET(
         errorCode === '42P01'; // undefined_table
       
       if (isColumnError) {
-        logger.warn('is_ai_powered column does not exist in database, using default value', {
+        logger.warn('is_ai_powered column does not exist, selecting without it', {
           error: errorMessage,
           code: errorCode,
         });
-        // Return error indicating database schema needs update
-        return NextResponse.json({ 
-          error: 'Database schema mismatch',
-          details: 'The is_ai_powered column does not exist in the database. Please run database migrations.',
-          code: 'SCHEMA_MISMATCH',
-        }, { status: 500 });
+        
+        // Try selecting specific columns (excluding is_ai_powered)
+        try {
+          reports = await db
+            .select({
+              id: analysisReports.id,
+              userId: analysisReports.userId,
+              repositoryId: analysisReports.repositoryId,
+              overallScore: analysisReports.overallScore,
+              issues: analysisReports.issues,
+              recommendations: analysisReports.recommendations,
+              shareToken: analysisReports.shareToken,
+              createdAt: analysisReports.createdAt,
+              // isAIPowered is omitted here
+            })
+            .from(analysisReports)
+            .where(eq(analysisReports.repositoryId, repo.id))
+            .orderBy(desc(analysisReports.createdAt))
+            .limit(1);
+          
+          // Manually add isAIPowered = 0 for reports without the column
+          if (reports.length > 0) {
+            (reports[0] as typeof reports[0] & { isAIPowered: number }).isAIPowered = 0;
+          }
+        } catch (retryError) {
+          logger.error('Retry select also failed', retryError);
+          return NextResponse.json({ 
+            error: 'Database schema mismatch',
+            details: 'Failed to fetch analysis results. Please run database migrations.',
+            code: 'SCHEMA_MISMATCH',
+          }, { status: 500 });
+        }
       } else {
         // Re-throw if it's a different error
         logger.error('Database query failed', dbError);

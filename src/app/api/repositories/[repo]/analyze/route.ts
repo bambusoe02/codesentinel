@@ -128,20 +128,56 @@ export async function POST(
     }
 
     // Save analysis report to database
+    // Use a more defensive approach: try with isAIPowered, fallback to without it on ANY error
     let report;
-    try {
-      // Ensure isAIPowered is always a number (0 or 1)
-      const isAIPoweredValue = analysisResult.isAIPowered === true ? 1 : 0;
-      
-      logger.info('Saving analysis report', {
-        overallScore: analysisResult.overallScore,
-        issuesCount: analysisResult.issues?.length || 0,
-        isAIPowered: isAIPoweredValue,
-        isAIPoweredOriginal: analysisResult.isAIPowered,
-      });
+    const isAIPoweredValue = analysisResult.isAIPowered === true ? 1 : 0;
+    
+    logger.info('Saving analysis report', {
+      overallScore: analysisResult.overallScore,
+      issuesCount: analysisResult.issues?.length || 0,
+      isAIPowered: isAIPoweredValue,
+    });
 
+    // First attempt: try with isAIPowered
+    try {
+      [report] = await db
+        .insert(analysisReports)
+        .values({
+          userId: user.id,
+          repositoryId: repo.id,
+          overallScore: analysisResult.overallScore,
+          issues: analysisResult.issues || [],
+          recommendations: analysisResult.recommendations || [],
+          isAIPowered: isAIPoweredValue,
+        })
+        .returning();
+      
+      logger.info('Analysis report saved successfully with isAIPowered', {
+        reportId: report.id,
+        isAIPowered: report.isAIPowered,
+      });
+    } catch (firstError: unknown) {
+      // Log the error for debugging
+      const error = firstError as { 
+        message?: string; 
+        code?: string; 
+        constraint?: string; 
+        detail?: string;
+        hint?: string;
+      };
+      const errorMessage = error?.message || '';
+      const errorCode = error?.code || '';
+      
+      logger.warn('First insert attempt failed, retrying without isAIPowered', {
+        message: errorMessage,
+        code: errorCode,
+        detail: error?.detail,
+        hint: error?.hint,
+      });
+      
+      // Retry without isAIPowered - let database use default
+      // This handles ANY error, not just column-related ones
       try {
-        // First attempt: try with isAIPowered
         [report] = await db
           .insert(analysisReports)
           .values({
@@ -150,116 +186,37 @@ export async function POST(
             overallScore: analysisResult.overallScore,
             issues: analysisResult.issues || [],
             recommendations: analysisResult.recommendations || [],
-            isAIPowered: isAIPoweredValue,
+            // Omit isAIPowered - let database use default (0)
           })
           .returning();
         
-        logger.info('Analysis report saved successfully with isAIPowered', {
+        logger.info('Analysis report saved successfully without isAIPowered (using default)', {
           reportId: report.id,
-          isAIPowered: report.isAIPowered,
+          isAIPowered: report.isAIPowered ?? 0,
         });
-      } catch (firstError: unknown) {
-        const error = firstError as { 
-          message?: string; 
-          code?: string; 
-          constraint?: string; 
-          detail?: string;
-          hint?: string;
-        };
-        const errorMessage = error?.message || '';
-        const errorCode = error?.code || '';
-        const errorDetail = error?.detail || '';
-        const errorHint = error?.hint || '';
-        
-        // Log full error for debugging
-        logger.error('Database insert error (first attempt)', {
-          message: errorMessage,
-          code: errorCode,
-          detail: errorDetail,
-          hint: errorHint,
-          constraint: error?.constraint,
-          isAIPoweredValue,
-          fullError: firstError instanceof Error ? firstError.stack : String(firstError),
-        });
-        
-        // Check if error is related to is_ai_powered column or any database constraint/type error
-        // PostgreSQL error codes: https://www.postgresql.org/docs/current/errcodes-appendix.html
-        const isColumnError = 
-          errorMessage.includes('is_ai_powered') ||
-          errorMessage.includes('isAIPowered') ||
-          errorMessage.toLowerCase().includes('column') ||
-          errorMessage.toLowerCase().includes('constraint') ||
-          errorMessage.toLowerCase().includes('type') ||
-          errorMessage.toLowerCase().includes('datatype') ||
-          errorCode === '42703' || // undefined_column
-          errorCode === '42P01' || // undefined_table
-          errorCode === '23502' || // not_null_violation
-          errorCode === '23514' || // check_violation
-          errorCode === '42804' || // datatype_mismatch
-          errorCode === '42P16' || // invalid_table_definition
-          error?.constraint?.includes('is_ai_powered') ||
-          errorDetail.includes('is_ai_powered') ||
-          errorHint.includes('is_ai_powered');
-        
-        if (isColumnError) {
-          logger.warn('is_ai_powered column issue detected, retrying without it', {
-            error: errorMessage,
-            code: errorCode,
-            detail: errorDetail,
-            hint: errorHint,
-          });
-          
-          try {
-            // Retry without isAIPowered - let database use default
-            [report] = await db
-              .insert(analysisReports)
-              .values({
-                userId: user.id,
-                repositoryId: repo.id,
-                overallScore: analysisResult.overallScore,
-                issues: analysisResult.issues || [],
-                recommendations: analysisResult.recommendations || [],
-                // Omit isAIPowered - let database use default (0)
-              })
-              .returning();
-            
-            logger.info('Analysis report saved successfully without isAIPowered (using default)', {
-              reportId: report.id,
-              isAIPowered: report.isAIPowered,
-            });
-          } catch (retryError: unknown) {
-            const retryErr = retryError as { message?: string; code?: string };
-            logger.error('Retry insert also failed', {
-              message: retryErr?.message,
-              code: retryErr?.code,
-              fullError: retryError instanceof Error ? retryError.stack : String(retryError),
-            });
-            // If retry also fails, throw original error with more context
-            throw new Error(
-              `Database insert failed even without isAIPowered. Original: ${errorMessage}. Retry: ${retryErr?.message || 'Unknown error'}`
-            );
-          }
-        } else {
-          // Re-throw if it's a different error (not column-related)
-          logger.error('Non-column error, re-throwing', {
+      } catch (retryError: unknown) {
+        const retryErr = retryError as { message?: string; code?: string; detail?: string };
+        logger.error('Both insert attempts failed', {
+          firstAttempt: {
             message: errorMessage,
             code: errorCode,
-            detail: errorDetail,
-          });
-          throw firstError;
-        }
+          },
+          retryAttempt: {
+            message: retryErr?.message,
+            code: retryErr?.code,
+            detail: retryErr?.detail,
+          },
+        });
+        
+        return NextResponse.json(
+          {
+            error: 'Failed to save analysis results',
+            details: `Database insert failed. First attempt: ${errorMessage}. Retry attempt: ${retryErr?.message || 'Unknown error'}`,
+            code: 'DATABASE_INSERT_FAILED',
+          },
+          { status: 500 }
+        );
       }
-    } catch (dbError) {
-      logger.error('Failed to save analysis report to database', dbError);
-      const errorDetails = dbError instanceof Error ? dbError.message : 'Database error';
-      return NextResponse.json(
-        {
-          error: 'Failed to save analysis results',
-          details: errorDetails,
-          stack: process.env.NODE_ENV === 'development' && dbError instanceof Error ? dbError.stack : undefined,
-        },
-        { status: 500 }
-      );
     }
 
     return NextResponse.json({
