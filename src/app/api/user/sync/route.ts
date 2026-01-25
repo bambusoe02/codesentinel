@@ -5,7 +5,6 @@ import { eq } from 'drizzle-orm';
 import { NextResponse } from 'next/server';
 import { encrypt, isEncryptionConfigured } from '@/lib/encryption';
 import { logger } from '@/lib/logger';
-import { randomUUID } from 'crypto';
 
 export async function POST() {
   try {
@@ -104,24 +103,55 @@ export async function POST() {
     }
 
     // Create new user
-    // Generate id explicitly (TEXT field, not auto-increment)
-    // Use Clerk's userId as the id for consistency, or generate UUID if needed
-    const userDbId = userId || randomUUID();
+    // Use Clerk's userId as the id for consistency (TEXT field, not auto-increment)
+    const userDbId = userId; // Używaj bezpośrednio Clerk userId (już jest string)
     
-    const [newUser] = await db
-      .insert(users)
-      .values({
-        id: userDbId, // Explicit TEXT id - required, no default
-        clerkId: userId,
-        email: clerkUser.emailAddresses[0]?.emailAddress || '',
-        firstName: clerkUser.firstName || null,
-        lastName: clerkUser.lastName || null,
-        githubUsername: githubUsername,
-        githubToken: encryptedGitHubToken, // Encrypted token from Clerk
-      })
-      .returning();
+    // Walidacja email
+    const userEmail = clerkUser.emailAddresses[0]?.emailAddress;
+    if (!userEmail) {
+      logger.error('User email is missing', { userId, clerkUser: { id: clerkUser.id } });
+      return NextResponse.json(
+        { error: 'User email is required' },
+        { status: 400 }
+      );
+    }
 
-    return NextResponse.json({ success: true, user: newUser });
+    try {
+      const [newUser] = await db
+        .insert(users)
+        .values({
+          id: userDbId, // Explicit TEXT id - required, no default
+          clerkId: userId,
+          email: userEmail,
+          firstName: clerkUser.firstName || null,
+          lastName: clerkUser.lastName || null,
+          githubUsername: githubUsername,
+          githubToken: encryptedGitHubToken, // Encrypted token from Clerk
+        })
+        .returning();
+
+      logger.info('User created successfully', { 
+        userId: newUser.id, 
+        clerkId: newUser.clerkId,
+        email: newUser.email 
+      });
+
+      return NextResponse.json({ success: true, user: newUser });
+    } catch (insertError: unknown) {
+      const error = insertError as { message?: string; code?: string; detail?: string; constraint?: string };
+      logger.error('Failed to create user in database', {
+        error: error?.message,
+        code: error?.code,
+        detail: error?.detail,
+        constraint: error?.constraint,
+        userId: userDbId,
+        clerkId: userId,
+        email: userEmail,
+      });
+      
+      // Re-throw to be caught by outer catch
+      throw insertError;
+    }
   } catch (error) {
     logger.error('Error syncing user', error);
     return NextResponse.json(
