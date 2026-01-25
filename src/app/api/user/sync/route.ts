@@ -62,13 +62,22 @@ export async function POST() {
     }
 
     // Check if user exists in database
+    console.log('Checking for existing user with clerkId:', userId);
     const existingUser = await db
       .select()
       .from(users)
       .where(eq(users.clerkId, userId))
       .limit(1);
 
+    console.log('Existing user check result:', {
+      found: existingUser.length > 0,
+      count: existingUser.length,
+      userId: existingUser[0]?.id,
+      clerkId: existingUser[0]?.clerkId,
+    });
+
     if (existingUser.length > 0) {
+      console.log('User exists, updating instead of creating');
       // Update existing user
       // Only update token if we got a new one from Clerk (don't overwrite manual token unless we have a new one)
       const updateData: {
@@ -103,11 +112,13 @@ export async function POST() {
     }
 
     // Create new user
+    console.log('No existing user found, creating new user');
     // Use Clerk's userId as the id for consistency (TEXT field, not auto-increment)
     const userDbId = userId; // Używaj bezpośrednio Clerk userId (już jest string)
     
     // Walidacja email
     const userEmail = clerkUser.emailAddresses[0]?.emailAddress;
+    console.log('User email validation:', { userEmail, hasEmail: !!userEmail });
     if (!userEmail) {
       logger.error('User email is missing', { userId, clerkUser: { id: clerkUser.id } });
       return NextResponse.json(
