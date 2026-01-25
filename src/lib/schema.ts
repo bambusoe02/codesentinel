@@ -51,7 +51,7 @@ export const repositories = pgTable('repositories', {
                                     language: text('language'),
                                     stars: integer('stars').default(0),
                                     forks: integer('forks').default(0),
-                                      isPrivate: integer('is_private').default(0), // 0 = false, 1 = true
+                                      isPrivate: boolean('is_private').default(false),
                                     htmlUrl: text('html_url').notNull(),
                                     createdAt: timestamp('created_at').defaultNow().notNull(),
                                     updatedAt: timestamp('updated_at').defaultNow().notNull(),
