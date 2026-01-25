@@ -21,3 +21,19 @@ try {
 
 export const db = databaseInstance;
 export type DB = typeof databaseInstance;
+
+// Helper function to check database connection
+export async function checkDatabaseConnection(): Promise<boolean> {
+  if (!databaseInstance) {
+    return false;
+  }
+  
+  try {
+    // Simple query to test connection
+    await databaseInstance.execute('SELECT 1');
+    return true;
+  } catch (error) {
+    logger.error('Database connection check failed', error);
+    return false;
+  }
+}

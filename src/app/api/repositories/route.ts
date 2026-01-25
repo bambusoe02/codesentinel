@@ -26,19 +26,42 @@ export async function GET() {
     // Store db in local variable for TypeScript narrow type checking
     const database = db;
 
-    // Get user from database
-    const [user] = await database
-      .select()
-      .from(users)
-      .where(eq(users.clerkId, userId))
-      .limit(1);
-
-    if (!user) {
-      logger.warn('User not found in repositories route, returning empty array', { clerkId: userId });
-      // Return empty array instead of error - user needs to sync first
+    // Get user from database with better error handling
+    let user;
+    try {
+      const userResult = await database
+        .select()
+        .from(users)
+        .where(eq(users.clerkId, userId))
+        .limit(1);
+      
+      user = userResult[0];
+      
+      if (!user) {
+        logger.warn('User not found in repositories route, returning empty array', { clerkId: userId });
+        return NextResponse.json({ 
+          repositories: [],
+          message: 'User not synced. Please refresh the page to sync your account.'
+        });
+      }
+    } catch (dbError: unknown) {
+      const error = dbError as { message?: string; code?: string; detail?: string };
+      logger.error('Database query failed in repositories route', {
+        error: error?.message,
+        code: error?.code,
+        detail: error?.detail,
+        clerkId: userId,
+      });
+      console.error('Database error details:', {
+        message: error?.message,
+        code: error?.code,
+        detail: error?.detail,
+      });
+      
+      // Return empty array instead of error to prevent UI crash
       return NextResponse.json({ 
         repositories: [],
-        message: 'User not synced. Please refresh the page to sync your account.'
+        message: 'Database connection issue. Please try again later.'
       });
     }
 

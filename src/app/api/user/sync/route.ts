@@ -71,13 +71,30 @@ export async function POST() {
       );
     }
 
-    // Check if user exists in database (for UUID migration)
+    // Check if user exists in database (for UUID migration) with error handling
     console.log('Checking for existing user with clerkId:', userId);
-    const existingUser = await db
-      .select()
-      .from(users)
-      .where(eq(users.clerkId, userId))
-      .limit(1);
+    let existingUser: Array<typeof users.$inferSelect> = [];
+    try {
+      existingUser = await db
+        .select()
+        .from(users)
+        .where(eq(users.clerkId, userId))
+        .limit(1);
+    } catch (queryError: unknown) {
+      const error = queryError as { message?: string; code?: string; detail?: string };
+      console.error('Failed to query existing user:', {
+        error: error?.message,
+        code: error?.code,
+        detail: error?.detail,
+      });
+      logger.error('Failed to query existing user', {
+        error: error?.message,
+        code: error?.code,
+        detail: error?.detail,
+        clerkId: userId,
+      });
+      // Continue with insert attempt - maybe user doesn't exist yet
+    }
 
     // If user exists with UUID as id, migrate to Clerk userId
     if (existingUser.length > 0) {
@@ -134,8 +151,26 @@ export async function POST() {
     });
 
     try {
+      // Add detailed logging BEFORE insert
+      console.log('=== ATTEMPTING USER INSERT ===');
+      console.log('Database available:', !!db);
+      console.log('Insert values:', {
+        id: userId,
+        clerkId: userId,
+        email: userEmail,
+        firstName: clerkUser.firstName || null,
+        lastName: clerkUser.lastName || null,
+        githubUsername: githubUsername,
+        hasToken: !!encryptedGitHubToken,
+      });
+      
+      if (!db) {
+        console.error('❌ Database is null!');
+        throw new Error('Database connection is null');
+      }
+      
       // Try insert first
-      const [newUser] = await db
+      const result = await db
         .insert(users)
         .values({
           id: userId, // Use Clerk userId directly as id
@@ -148,7 +183,24 @@ export async function POST() {
         })
         .returning();
 
-      console.log('User created successfully:', {
+      console.log('=== INSERT RESULT ===');
+      console.log('Result type:', typeof result);
+      console.log('Is array:', Array.isArray(result));
+      console.log('Result length:', result?.length);
+
+      if (!result || result.length === 0) {
+        console.error('❌ Insert returned empty result!');
+        throw new Error('Insert returned empty result');
+      }
+
+      const [newUser] = result;
+
+      if (!newUser) {
+        console.error('❌ First element of result is undefined!');
+        throw new Error('First element of result is undefined');
+      }
+
+      console.log('✅ User created successfully:', {
         id: newUser.id,
         clerkId: newUser.clerkId,
         email: newUser.email,
@@ -163,6 +215,14 @@ export async function POST() {
       return NextResponse.json({ success: true, user: newUser });
     } catch (insertError: unknown) {
       const error = insertError as { message?: string; code?: string; detail?: string; constraint?: string };
+      
+      // Zwiększ szczegółowość logowania błędów
+      console.error('=== INSERT ERROR ===');
+      console.error('Error message:', error?.message);
+      console.error('Error code:', error?.code);
+      console.error('Error detail:', error?.detail);
+      console.error('Error constraint:', error?.constraint);
+      console.error('Full error:', JSON.stringify(error, null, 2));
       
       // If user already exists (unique constraint violation), update instead
       if (error?.code === '23505' || error?.constraint?.includes('clerk_id') || error?.message?.includes('unique')) {
