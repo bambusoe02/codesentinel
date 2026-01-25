@@ -102,7 +102,7 @@ export class AICodeAnalyzer {
           logger.info(`Attempting to use Claude model: ${model}`);
           message = await this.client.messages.create({
             model: model,
-            max_tokens: 4000,
+            max_tokens: 4000, // Limit tokens to prevent truncation
             messages: [
               {
                 role: 'user',
@@ -180,7 +180,10 @@ Analyze for:
 3. CODE QUALITY issues (code smells, duplication, complexity, lack of tests, poor naming, magic numbers, long functions)
 4. ARCHITECTURE issues (tight coupling, missing error handling, poor separation of concerns, anti-patterns, technical debt)
 
-Respond ONLY in valid JSON format (no markdown, no code blocks):
+CRITICAL: Respond ONLY in valid JSON format (no markdown, no code blocks, no text before/after).
+Keep response under 8000 characters to prevent truncation.
+Return complete, valid JSON that can be parsed directly.
+
 {
   "securityIssues": [{
     "severity": "high|medium|low",
@@ -201,7 +204,8 @@ Respond ONLY in valid JSON format (no markdown, no code blocks):
 
 Be specific with file paths and line numbers where possible.
 Prioritize real issues over nitpicks.
-Focus on actionable, high-impact findings.`;
+Focus on actionable, high-impact findings.
+Ensure JSON is complete and valid - no trailing commas, all brackets closed.`;
   }
 
   private prepareCodeSnippets(files: GitHubFile[]): string {
@@ -270,6 +274,7 @@ Focus on actionable, high-impact findings.`;
       cleaned = jsonMatch[0];
     }
 
+    // First attempt: normal JSON parse
     try {
       const parsed = JSON.parse(cleaned);
 
@@ -291,13 +296,77 @@ Focus on actionable, high-impact findings.`;
       });
 
       return result;
-    } catch (error) {
-      logger.error('Failed to parse AI response', error, {
+    } catch (parseError) {
+      logger.warn('Initial JSON parse failed, attempting repair', {
+        error: parseError instanceof Error ? parseError.message : 'Unknown error',
         responseLength: cleaned.length,
-        responsePreview: cleaned.substring(0, 1000),
-        errorMessage: error instanceof Error ? error.message : 'Unknown error',
+        responsePreview: cleaned.substring(0, 500),
       });
-      throw new Error(`Invalid AI response format: ${error instanceof Error ? error.message : 'Unknown error'}`);
+
+      // Second attempt: repair common JSON issues
+      try {
+        // Remove trailing commas
+        let repaired = cleaned.replace(/,\s*([}\]])/g, '$1');
+        
+        // Remove trailing incomplete objects/arrays
+        repaired = repaired.replace(/,\s*$/, '');
+        
+        // Fix unclosed strings (basic attempt)
+        // Use [\s\S] instead of . with s flag for ES2017 compatibility
+        repaired = repaired.replace(/(".*?)([^\\])$/m, '$1"');
+        
+        // Try to find the last complete JSON object
+        let lastBrace = repaired.lastIndexOf('}');
+        if (lastBrace > 0) {
+          // Check if we have a complete object before the last brace
+          const beforeLastBrace = repaired.substring(0, lastBrace);
+          const openBraces = (beforeLastBrace.match(/{/g) || []).length;
+          const closeBraces = (beforeLastBrace.match(/}/g) || []).length;
+          
+          // If braces are balanced before last brace, try parsing up to that point
+          if (openBraces === closeBraces) {
+            repaired = repaired.substring(0, lastBrace + 1);
+          }
+        }
+
+        const parsed = JSON.parse(repaired);
+
+        // Validate structure with defaults
+        const result: AIAnalysisResponse = {
+          securityIssues: Array.isArray(parsed.securityIssues) ? parsed.securityIssues : [],
+          performanceIssues: Array.isArray(parsed.performanceIssues) ? parsed.performanceIssues : [],
+          qualityIssues: Array.isArray(parsed.qualityIssues) ? parsed.qualityIssues : [],
+          architectureIssues: Array.isArray(parsed.architectureIssues) ? parsed.architectureIssues : [],
+          overallAssessment: parsed.overallAssessment || 'Analysis completed',
+          topRecommendations: Array.isArray(parsed.topRecommendations) ? parsed.topRecommendations : [],
+        };
+
+        logger.info('AI response parsed successfully after repair', {
+          securityIssues: result.securityIssues.length,
+          performanceIssues: result.performanceIssues.length,
+          qualityIssues: result.qualityIssues.length,
+          architectureIssues: result.architectureIssues.length,
+        });
+
+        return result;
+      } catch (repairError) {
+        logger.error('JSON repair failed, returning empty structure', {
+          originalError: parseError instanceof Error ? parseError.message : 'Unknown',
+          repairError: repairError instanceof Error ? repairError.message : 'Unknown',
+          responseLength: cleaned.length,
+          responsePreview: cleaned.substring(0, 1000),
+        });
+
+        // Final fallback: return empty structure
+        return {
+          securityIssues: [],
+          performanceIssues: [],
+          qualityIssues: [],
+          architectureIssues: [],
+          overallAssessment: 'AI analysis failed - response could not be parsed',
+          topRecommendations: [],
+        };
+      }
     }
   }
 

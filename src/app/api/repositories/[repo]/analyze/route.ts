@@ -7,6 +7,7 @@ import { GitHubClient } from '@/lib/github';
 import { CodeAnalyzer } from '@/lib/analyzer';
 import { decrypt } from '@/lib/encryption';
 import { logger } from '@/lib/logger';
+import { randomUUID } from 'crypto';
 
 export async function POST(
   request: Request,
@@ -138,6 +139,9 @@ export async function POST(
       isAIPowered: isAIPoweredValue,
     });
 
+    // Generate share token for public sharing
+    const shareToken = randomUUID().substring(0, 8);
+
     // First attempt: try with all fields including isAIPowered
     try {
       [report] = await db
@@ -152,6 +156,7 @@ export async function POST(
           techDebtScore: analysisResult.techDebtScore ?? null,
           issues: analysisResult.issues || [],
           recommendations: analysisResult.recommendations || [],
+          shareToken: shareToken,
           isAIPowered: isAIPoweredValue,
         })
         .returning();
@@ -191,6 +196,7 @@ export async function POST(
             // Omit optional score fields - they may not exist in DB
             issues: analysisResult.issues || [],
             recommendations: analysisResult.recommendations || [],
+            shareToken: shareToken, // Still include shareToken as it's useful
             // Omit isAIPowered - let database use default (0)
           })
           .returning();
