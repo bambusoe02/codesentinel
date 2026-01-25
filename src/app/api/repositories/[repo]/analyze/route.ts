@@ -140,28 +140,73 @@ export async function POST(
         isAIPoweredOriginal: analysisResult.isAIPowered,
       });
 
-      [report] = await db
-        .insert(analysisReports)
-        .values({
-          userId: user.id,
-          repositoryId: repo.id,
-          overallScore: analysisResult.overallScore,
-          issues: analysisResult.issues || [],
-          recommendations: analysisResult.recommendations || [],
-          isAIPowered: isAIPoweredValue,
-        })
-        .returning();
-      
-      logger.info('Analysis report saved successfully', {
-        reportId: report.id,
-        isAIPowered: report.isAIPowered,
-      });
+      try {
+        // First attempt: try with isAIPowered
+        [report] = await db
+          .insert(analysisReports)
+          .values({
+            userId: user.id,
+            repositoryId: repo.id,
+            overallScore: analysisResult.overallScore,
+            issues: analysisResult.issues || [],
+            recommendations: analysisResult.recommendations || [],
+            isAIPowered: isAIPoweredValue,
+          })
+          .returning();
+        
+        logger.info('Analysis report saved successfully with isAIPowered', {
+          reportId: report.id,
+          isAIPowered: report.isAIPowered,
+        });
+      } catch (firstError: unknown) {
+        const error = firstError as { message?: string; code?: string; constraint?: string };
+        const errorMessage = error?.message || '';
+        const errorCode = error?.code || '';
+        
+        // Check if error is related to is_ai_powered column
+        const isColumnError = 
+          errorMessage.includes('is_ai_powered') ||
+          errorMessage.includes('isAIPowered') ||
+          errorCode === '42703' || // undefined_column
+          errorCode === '42P01' || // undefined_table
+          error?.constraint?.includes('is_ai_powered');
+        
+        if (isColumnError) {
+          logger.warn('is_ai_powered column issue detected, retrying without it', {
+            error: errorMessage,
+            code: errorCode,
+          });
+          
+          // Retry without isAIPowered - let database use default
+          [report] = await db
+            .insert(analysisReports)
+            .values({
+              userId: user.id,
+              repositoryId: repo.id,
+              overallScore: analysisResult.overallScore,
+              issues: analysisResult.issues || [],
+              recommendations: analysisResult.recommendations || [],
+              // Omit isAIPowered - let database use default (0)
+            })
+            .returning();
+          
+          logger.info('Analysis report saved successfully without isAIPowered (using default)', {
+            reportId: report.id,
+            isAIPowered: report.isAIPowered,
+          });
+        } else {
+          // Re-throw if it's a different error
+          throw firstError;
+        }
+      }
     } catch (dbError) {
       logger.error('Failed to save analysis report to database', dbError);
+      const errorDetails = dbError instanceof Error ? dbError.message : 'Database error';
       return NextResponse.json(
         {
           error: 'Failed to save analysis results',
-          details: dbError instanceof Error ? dbError.message : 'Database error',
+          details: errorDetails,
+          stack: process.env.NODE_ENV === 'development' && dbError instanceof Error ? dbError.stack : undefined,
         },
         { status: 500 }
       );

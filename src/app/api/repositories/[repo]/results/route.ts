@@ -90,17 +90,29 @@ export async function GET(
     const report = reports[0];
     
     // Ensure isAIPowered is included in response
+    // Handle both integer (0/1) and boolean values from database
+    const isAIPoweredValue = report.isAIPowered === 1 || report.isAIPowered === true ? 1 : 0;
+    
     logger.info('Returning analysis report', {
       reportId: report.id,
       isAIPowered: report.isAIPowered,
       isAIPoweredType: typeof report.isAIPowered,
+      isAIPoweredValue,
+      overallScore: report.overallScore,
+      createdAt: report.createdAt,
     });
 
     return NextResponse.json({ 
       report: {
         ...report,
-        isAIPowered: report.isAIPowered ?? 0, // Ensure it's always a number
+        isAIPowered: isAIPoweredValue, // Ensure it's always a number (0 or 1)
       }
+    }, {
+      headers: {
+        'Cache-Control': 'no-store, no-cache, must-revalidate', // Ensure fresh data
+        'Pragma': 'no-cache',
+        'Expires': '0',
+      },
     });
   } catch (error) {
     logger.error('Error fetching analysis results', error);

@@ -424,19 +424,38 @@ export function ScanResults({ repoName }: ScanResultsProps) {
 
   return (
     <div className="space-y-6">
+      {/* Header with Refresh Button */}
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold">Analysis Results</h1>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => {
+            queryClient.invalidateQueries({ queryKey: ['analysis-results', repoName] });
+            queryClient.invalidateQueries({ queryKey: ['analysis-history', repoName] });
+            refetch();
+          }}
+        >
+          <RefreshCw className="w-4 h-4 mr-2" />
+          Refresh Data
+        </Button>
+      </div>
+
       {/* Overall Score */}
       <Card>
         <CardContent className="p-6">
           <div className="text-center">
-            {/* AI Mode Badge */}
-            <div className="flex justify-center mb-2">
-              <Badge
-                variant={isAIPowered ? 'default' : 'secondary'}
-                className={isAIPowered ? 'bg-purple-600 hover:bg-purple-700' : ''}
-              >
-                {isAIPowered ? '🤖 AI Analysis' : '📋 Rule-based'}
-              </Badge>
-            </div>
+            {/* AI Mode Badge - Always visible when report exists */}
+            {report && (
+              <div className="flex justify-center mb-2">
+                <Badge
+                  variant={isAIPowered ? 'default' : 'secondary'}
+                  className={isAIPowered ? 'bg-purple-600 hover:bg-purple-700 text-white' : ''}
+                >
+                  {isAIPowered ? '🤖 AI Analysis' : '📋 Rule-based'}
+                </Badge>
+              </div>
+            )}
             <div className="inline-flex items-center justify-center w-24 h-24 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 mb-4 transition-all duration-300 hover:scale-110 hover:shadow-lg shadow-purple-500/50">
               <span className="text-2xl font-bold text-white transition-all duration-500">{overall.score}</span>
             </div>
