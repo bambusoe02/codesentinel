@@ -90,18 +90,29 @@ export async function GET(
     filteredReports = filteredReports.slice(offset, offset + limit);
 
     // Format response
-    const history = filteredReports.map((report) => ({
-      id: report.id,
-      overallScore: report.overallScore,
-      issues: report.issues || [],
-      recommendations: report.recommendations || [],
-      createdAt: report.createdAt,
-      // Calculate category scores from issues
-      securityScore: calculateCategoryScore(report.issues || [], 'security'),
-      performanceScore: calculateCategoryScore(report.issues || [], 'performance'),
-      maintainabilityScore: calculateCategoryScore(report.issues || [], 'maintainability'),
-      reliabilityScore: calculateCategoryScore(report.issues || [], 'reliability'),
-    }));
+    // Use database columns if available, otherwise calculate from issues
+    const history = filteredReports.map((report) => {
+      const reportWithScores = report as typeof report & {
+        securityScore?: number | null;
+        performanceScore?: number | null;
+        maintainabilityScore?: number | null;
+        techDebtScore?: number | null;
+      };
+      
+      return {
+        id: report.id,
+        overallScore: report.overallScore,
+        issues: report.issues || [],
+        recommendations: report.recommendations || [],
+        createdAt: report.createdAt,
+        // Use database columns if available, otherwise calculate from issues
+        securityScore: reportWithScores.securityScore ?? calculateCategoryScore(report.issues || [], 'security'),
+        performanceScore: reportWithScores.performanceScore ?? calculateCategoryScore(report.issues || [], 'performance'),
+        maintainabilityScore: reportWithScores.maintainabilityScore ?? calculateCategoryScore(report.issues || [], 'maintainability'),
+        techDebtScore: reportWithScores.techDebtScore ?? null,
+        reliabilityScore: calculateCategoryScore(report.issues || [], 'reliability'),
+      };
+    });
 
     return NextResponse.json({ history });
   } catch (error) {

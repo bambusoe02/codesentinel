@@ -138,7 +138,7 @@ export async function POST(
       isAIPowered: isAIPoweredValue,
     });
 
-    // First attempt: try with isAIPowered
+    // First attempt: try with all fields including isAIPowered
     try {
       [report] = await db
         .insert(analysisReports)
@@ -146,6 +146,10 @@ export async function POST(
           userId: user.id,
           repositoryId: repo.id,
           overallScore: analysisResult.overallScore,
+          securityScore: analysisResult.securityScore ?? null,
+          performanceScore: analysisResult.performanceScore ?? null,
+          maintainabilityScore: analysisResult.maintainabilityScore ?? null,
+          techDebtScore: analysisResult.techDebtScore ?? null,
           issues: analysisResult.issues || [],
           recommendations: analysisResult.recommendations || [],
           isAIPowered: isAIPoweredValue,
@@ -175,7 +179,7 @@ export async function POST(
         hint: error?.hint,
       });
       
-      // Retry without isAIPowered - let database use default
+      // Retry without optional fields - let database use defaults
       // This handles ANY error, not just column-related ones
       try {
         [report] = await db
@@ -184,6 +188,7 @@ export async function POST(
             userId: user.id,
             repositoryId: repo.id,
             overallScore: analysisResult.overallScore,
+            // Omit optional score fields - they may not exist in DB
             issues: analysisResult.issues || [],
             recommendations: analysisResult.recommendations || [],
             // Omit isAIPowered - let database use default (0)
