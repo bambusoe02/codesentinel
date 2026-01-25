@@ -201,8 +201,8 @@ export function ScanResults({ repoName }: ScanResultsProps) {
   const isAIPowered = report 
     ? (report.isAIPowered === 1 || 
        report.isAIPowered === true ||
-       (report as any)?.isAIPowered === 1 ||
-       (report as any)?.isAIPowered === true)
+       (report as { isAIPowered?: number | boolean })?.isAIPowered === 1 ||
+       (report as { isAIPowered?: number | boolean })?.isAIPowered === true)
     : false;
   
   // Debug logging (only in development)

@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Providers } from "@/components/providers";
 import { PWAInstall } from "@/components/pwa-install";
+import { ErrorBoundary } from "@/components/error-boundary";
 import "./globals.css";
 
 // Check if Clerk is available on server
@@ -100,11 +101,13 @@ export default function RootLayout({
             enableSystem
             disableTransitionOnChange
           >
-            <Providers>
-              {children}
-              <Toaster />
-              <PWAInstall />
-            </Providers>
+            <ErrorBoundary>
+              <Providers>
+                {children}
+                <Toaster />
+                <PWAInstall />
+              </Providers>
+            </ErrorBoundary>
           </ThemeProvider>
         </body>
       </html>

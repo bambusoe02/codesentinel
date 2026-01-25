@@ -18,6 +18,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "type-check": "tsc --noEmit",
+    "build:check": "npm run lint && npm run type-check && npm run build",
     "db:generate": "drizzle-kit generate",
     "db:push": "drizzle-kit push",
     "db:push:force": "drizzle-kit push --force",

@@ -28,17 +28,26 @@ const getClerkAvailable = () => {
 // Conditionally load Clerk components (client-side only)
 const SignedIn = dynamic(() => 
   import("@clerk/nextjs").then(mod => ({ default: mod.SignedIn })), 
-  { ssr: false }
+  { 
+    ssr: false,
+    loading: () => null, // No loading state needed - ClerkWrapper handles it
+  }
 );
 
 const SignedOut = dynamic(() => 
   import("@clerk/nextjs").then(mod => ({ default: mod.SignedOut })), 
-  { ssr: false }
+  { 
+    ssr: false,
+    loading: () => null, // No loading state needed - ClerkWrapper handles it
+  }
 );
 
 const SignInButton = dynamic(() => 
   import("@clerk/nextjs").then(mod => ({ default: mod.SignInButton })), 
-  { ssr: false }
+  { 
+    ssr: false,
+    loading: () => null, // No loading state needed - ClerkWrapper handles it
+  }
 );
 
 // Wrapper component to conditionally render Clerk components

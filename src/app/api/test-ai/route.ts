@@ -15,7 +15,8 @@ export async function GET() {
 
     if (hasAPIKey) {
       try {
-        const analyzer = new AICodeAnalyzer(process.env.ANTHROPIC_API_KEY!);
+        // Test creating analyzer instance (we don't need to keep the instance)
+        new AICodeAnalyzer(process.env.ANTHROPIC_API_KEY!);
         analyzerCreated = true;
       } catch (error) {
         testError = error instanceof Error ? error.message : 'Unknown error';

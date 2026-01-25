@@ -95,10 +95,11 @@ export class AICodeAnalyzer {
             },
           ],
         });
-      } catch (modelError: any) {
+      } catch (modelError: unknown) {
         // If model not found, try older version
-        if (modelError?.status === 400 || modelError?.message?.includes('model')) {
-          logger.warn('Claude 3.5 Sonnet not available, trying Claude 3 Sonnet', { error: modelError });
+        const error = modelError as { status?: number; message?: string; type?: string };
+        if (error?.status === 400 || error?.message?.includes('model')) {
+          logger.warn('Claude 3.5 Sonnet not available, trying Claude 3 Sonnet', { error });
           message = await this.client.messages.create({
             model: 'claude-3-sonnet-20240229',
             max_tokens: 4000,
@@ -111,9 +112,9 @@ export class AICodeAnalyzer {
           });
         } else {
           logger.error('Claude API call failed', modelError, {
-            errorMessage: modelError?.message,
-            errorStatus: modelError?.status,
-            errorType: modelError?.type,
+            errorMessage: error?.message,
+            errorStatus: error?.status,
+            errorType: error?.type,
           });
           throw modelError;
         }
