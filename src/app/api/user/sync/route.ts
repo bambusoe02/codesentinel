@@ -195,9 +195,12 @@ export async function POST() {
           email: updatedUser.email,
         });
 
+        // Don't return sensitive data (githubToken)
+        const { githubToken: _unusedToken, ...safeUser } = updatedUser;
         return NextResponse.json({ 
           success: true, 
-          user: updatedUser 
+          user: safeUser,
+          message: 'User synced successfully'
         });
       } catch (updateError: unknown) {
         const error = updateError as { message?: string; code?: string; detail?: string };
@@ -279,7 +282,13 @@ export async function POST() {
         email: newUser.email 
       });
 
-      return NextResponse.json({ success: true, user: newUser });
+      // Don't return sensitive data (githubToken)
+      const { githubToken: _unusedToken, ...safeUser } = newUser;
+      return NextResponse.json({ 
+        success: true, 
+        user: safeUser,
+        message: 'User synced successfully'
+      });
     } catch (insertError: unknown) {
       // Parse error using utility function
       const parsedError = parseDbError(insertError);

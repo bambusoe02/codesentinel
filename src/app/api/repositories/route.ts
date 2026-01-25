@@ -117,8 +117,21 @@ export async function GET() {
           .orderBy(desc(analysisReports.createdAt))
           .limit(1);
 
+        // Extract owner from fullName (format: "owner/repo")
+        const [ownerLogin] = repo.fullName.split('/');
+        
         return {
-          ...repo,
+          id: repo.id.toString(), // Convert to string for frontend
+          name: repo.name,
+          fullName: repo.fullName,
+          description: repo.description,
+          language: repo.language,
+          stargazersCount: repo.stars || 0, // Map stars to stargazersCount
+          htmlUrl: repo.htmlUrl,
+          owner: {
+            login: ownerLogin || '',
+            avatar_url: `https://github.com/${ownerLogin}.png`, // Default GitHub avatar
+          },
           latestAnalysis: latestAnalysis ? {
             ...latestAnalysis,
             issues: Array.isArray(latestAnalysis.reportData) ? latestAnalysis.reportData : [],
@@ -201,8 +214,21 @@ export async function GET() {
           .orderBy(desc(analysisReports.createdAt))
           .limit(1);
 
+        // Extract owner from fullName (format: "owner/repo")
+        const [ownerLogin] = repoRecord.fullName.split('/');
+        
         return {
-          ...repoRecord,
+          id: repoRecord.id.toString(), // Convert to string for frontend
+          name: repoRecord.name,
+          fullName: repoRecord.fullName,
+          description: repoRecord.description,
+          language: repoRecord.language,
+          stargazersCount: repoRecord.stars || 0, // Map stars to stargazersCount
+          htmlUrl: repoRecord.htmlUrl,
+          owner: {
+            login: ownerLogin || '',
+            avatar_url: `https://github.com/${ownerLogin}.png`, // Default GitHub avatar
+          },
           latestAnalysis: latestAnalysis ? {
             ...latestAnalysis,
             issues: Array.isArray(latestAnalysis.reportData) ? latestAnalysis.reportData : [],

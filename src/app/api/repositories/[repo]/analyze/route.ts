@@ -377,11 +377,61 @@ export async function POST(
       }
     }
 
+    // Verify that report was actually saved to database
+    if (!report || !report.id) {
+      logger.error('Analysis report was not saved despite successful insert', {
+        report,
+        analysisResult: {
+          overallScore: analysisResult.overallScore,
+          issuesCount: reportData.length,
+        },
+      });
+      return NextResponse.json(
+        { 
+          error: 'Analysis completed but failed to save results',
+          details: 'Please try again or contact support if the problem persists'
+        },
+        { status: 500 }
+      );
+    }
+
+    // Double-check by querying the database
+    try {
+      const [verifiedReport] = await db
+        .select({ id: analysisReports.id })
+        .from(analysisReports)
+        .where(eq(analysisReports.id, report.id))
+        .limit(1);
+
+      if (!verifiedReport) {
+        logger.error('Analysis report not found in database after insert', {
+          reportId: report.id,
+        });
+        return NextResponse.json(
+          { 
+            error: 'Analysis completed but results were not saved',
+            details: 'Please try again'
+          },
+          { status: 500 }
+        );
+      }
+    } catch (verifyError) {
+      logger.error('Failed to verify analysis report in database', verifyError);
+      // Don't fail the request if verification fails - report was already inserted
+    }
+
+    logger.info('Analysis completed and verified successfully', {
+      reportId: report.id,
+      overallScore: analysisResult.overallScore,
+      isAIPowered: isAIPoweredValue,
+    });
+
     return NextResponse.json({
       success: true,
       reportId: report.id,
       analysis: analysisResult,
       isAIPowered: analysisResult.isAIPowered ?? false,
+      message: 'Analysis completed successfully',
     });
   } catch (error) {
     logger.error('Error analyzing repository', error);

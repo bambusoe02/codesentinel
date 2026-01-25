@@ -93,11 +93,15 @@ export function RepositoryList() {
       setAnalyzingRepo(repoFullName);
     },
     onSuccess: (data, repoFullName) => {
+      // Show success message
+      toast.success('Analysis completed successfully!');
+      
       // Invalidate all related queries
       queryClient.invalidateQueries({ queryKey: ['repositories'] });
       queryClient.invalidateQueries({ queryKey: ['analysis-results', repoFullName] });
       queryClient.invalidateQueries({ queryKey: ['analysis-history', repoFullName] });
       queryClient.invalidateQueries({ queryKey: ['recent-activity'] });
+      
       setAnalyzingRepo(null);
       
       // Force refetch after a short delay to ensure fresh data
@@ -106,10 +110,10 @@ export function RepositoryList() {
         queryClient.refetchQueries({ queryKey: ['analysis-results', repoFullName] });
       }, 500);
       
-      // Use window.location instead of router.push to avoid hydration issues
+      // Automatically redirect to results page after analysis completes
       setTimeout(() => {
         window.location.href = `/scan/${encodeURIComponent(repoFullName)}`;
-      }, 1000);
+      }, 1500);
     },
     onError: (error, repoFullName) => {
       logger.error('Analysis error', error, { repoFullName });
