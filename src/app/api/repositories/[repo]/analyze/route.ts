@@ -254,9 +254,14 @@ export async function POST(
       .returning();
 
       console.log('✅ Analysis report saved successfully (first attempt)');
+      
+      // Check if isAiPowered was returned (column might not exist)
+      const reportIsAiPowered = (report as { isAiPowered?: number }).isAiPowered ?? isAIPoweredValue;
+      
       logger.info('Analysis report saved successfully with isAiPowered', {
         reportId: report.id,
-        isAiPowered: report.isAiPowered,
+        isAiPowered: reportIsAiPowered,
+        isAiPoweredInResponse: 'isAiPowered' in report,
       });
     } catch (firstError: unknown) {
       // Parse error using utility function
@@ -301,6 +306,7 @@ export async function POST(
           shareToken: shareToken,
         });
 
+        // Retry with minimal fields and explicit returning to avoid non-existent columns
         [report] = await db
         .insert(analysisReports)
         .values({
@@ -311,14 +317,27 @@ export async function POST(
           reportData: reportData,
           recommendations: recommendations,
           shareToken: shareToken, // Still include shareToken as it's useful
-          // Omit isAiPowered - let database use default (0)
+          // Omit isAiPowered - let database use default (0) if column exists
         })
-        .returning();
+        .returning({
+          id: analysisReports.id,
+          userId: analysisReports.userId,
+          repositoryId: analysisReports.repositoryId,
+          overallScore: analysisReports.overallScore,
+          reportData: analysisReports.reportData,
+          recommendations: analysisReports.recommendations,
+          shareToken: analysisReports.shareToken,
+          createdAt: analysisReports.createdAt,
+          // Explicitly omit isAiPowered and other optional columns from returning
+        });
 
         console.log('✅ Analysis report saved successfully (second attempt)');
+        // isAiPowered column doesn't exist, so it won't be in the response
+        // Use the value we tried to insert
         logger.info('Analysis report saved successfully without optional fields (using defaults)', {
           reportId: report.id,
-          isAiPowered: report.isAiPowered ?? 0,
+          isAiPowered: isAIPoweredValue, // Use the value we intended to insert
+          note: 'is_ai_powered column may not exist in database',
         });
       } catch (retryError: unknown) {
         // Parse retry error using utility function
