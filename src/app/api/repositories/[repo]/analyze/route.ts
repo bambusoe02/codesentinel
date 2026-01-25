@@ -33,10 +33,10 @@ export async function POST(
 
     // Get user from database
     const [user] = await db
-      .select()
-      .from(users)
-      .where(eq(users.clerkId, userId))
-      .limit(1);
+    .select()
+    .from(users)
+    .where(eq(users.clerkId, userId))
+    .limit(1);
 
     if (!user) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
@@ -44,28 +44,28 @@ export async function POST(
 
     // Get repository from database
     const [repo] = await db
-      .select()
-      .from(repositories)
-      .where(and(
-        eq(repositories.userId, user.id),
-        eq(repositories.fullName, repoFullName)
-      ))
-      .limit(1);
+    .select()
+    .from(repositories)
+    .where(and(
+      eq(repositories.userId, user.id),
+               eq(repositories.fullName, repoFullName)
+    ))
+    .limit(1);
 
     if (!repo) {
       // Get all user repos for debugging
       const allUserRepos = await db
-        .select({ fullName: repositories.fullName })
-        .from(repositories)
-        .where(eq(repositories.userId, user.id));
-      
+      .select({ fullName: repositories.fullName })
+      .from(repositories)
+      .where(eq(repositories.userId, user.id));
+
       logger.error('Repository not found in analyze', new Error('Repository not found'), {
         requested: repoFullName,
         available: allUserRepos.map(r => r.fullName),
-        userId: user.id,
+                   userId: user.id,
       });
 
-      return NextResponse.json({ 
+      return NextResponse.json({
         error: 'Repository not found',
         details: `Looking for: ${repoFullName}. Available repos: ${allUserRepos.map(r => r.fullName).join(', ')}`
       }, { status: 404 });
@@ -73,7 +73,7 @@ export async function POST(
 
     // Try to get GitHub token from user's stored token (decrypt if encrypted), fallback to environment
     let githubToken: string | null = null;
-    
+
     if (user.githubToken) {
       try {
         // Try to decrypt (if encrypted)
@@ -86,9 +86,9 @@ export async function POST(
     } else {
       githubToken = process.env.GITHUB_TOKEN || null;
     }
-    
+
     if (!githubToken) {
-      return NextResponse.json({ 
+      return NextResponse.json({
         error: 'GitHub token not configured. Sign in with GitHub OAuth or add your token in Settings.'
       }, { status: 500 });
     }
@@ -99,8 +99,8 @@ export async function POST(
     // Fetch repository data
     const [, stats, commits] = await Promise.all([
       githubClient.getRepository(owner, name), // Validated but not used directly
-      githubClient.getRepositoryStats(owner, name),
-      githubClient.getRepositoryCommits(owner, name, undefined, undefined, 30),
+                                                 githubClient.getRepositoryStats(owner, name),
+                                                 githubClient.getRepositoryCommits(owner, name, undefined, undefined, 30),
     ]);
 
     // Get repository files
@@ -132,7 +132,7 @@ export async function POST(
     // Use a more defensive approach: try with isAIPowered, fallback to without it on ANY error
     let report;
     const isAIPoweredValue = analysisResult.isAIPowered === true ? 1 : 0;
-    
+
     logger.info('Saving analysis report', {
       overallScore: analysisResult.overallScore,
       issuesCount: analysisResult.issues?.length || 0,
@@ -145,63 +145,67 @@ export async function POST(
     // First attempt: try with all fields including isAIPowered
     try {
       [report] = await db
-        .insert(analysisReports)
-        .values({
-          userId: user.id,
-          repositoryId: repo.id,
-          overallScore: analysisResult.overallScore,
-          securityScore: analysisResult.securityScore ?? null,
-          performanceScore: analysisResult.performanceScore ?? null,
-          maintainabilityScore: analysisResult.maintainabilityScore ?? null,
-          techDebtScore: analysisResult.techDebtScore ?? null,
-          issues: analysisResult.issues || [],
-          recommendations: analysisResult.recommendations || [],
-          shareToken: shareToken,
-          isAIPowered: isAIPoweredValue,
-        })
-        .returning();
-      
+      .insert(analysisReports)
+      .values({
+        id: randomUUID(), // ✅ EXPLICIT UUID
+              userId: user.id,
+              repositoryId: repo.id,
+              overallScore: analysisResult.overallScore,
+              securityScore: analysisResult.securityScore ?? null,
+              performanceScore: analysisResult.performanceScore ?? null,
+              maintainabilityScore: analysisResult.maintainabilityScore ?? null,
+              techDebtScore: analysisResult.techDebtScore ?? null,
+              issues: analysisResult.issues || [],
+              recommendations: analysisResult.recommendations || [],
+              shareToken: shareToken,
+              isAIPowered: isAIPoweredValue,
+              createdAt: new Date(), // ✅ EXPLICIT TIMESTAMP
+      })
+      .returning();
+
       logger.info('Analysis report saved successfully with isAIPowered', {
         reportId: report.id,
         isAIPowered: report.isAIPowered,
       });
     } catch (firstError: unknown) {
       // Log the error for debugging
-      const error = firstError as { 
-        message?: string; 
-        code?: string; 
-        constraint?: string; 
+      const error = firstError as {
+        message?: string;
+        code?: string;
+        constraint?: string;
         detail?: string;
         hint?: string;
       };
       const errorMessage = error?.message || '';
       const errorCode = error?.code || '';
-      
-      logger.warn('First insert attempt failed, retrying without isAIPowered', {
+
+      logger.warn('First insert attempt failed, retrying without optional fields', {
         message: errorMessage,
         code: errorCode,
         detail: error?.detail,
         hint: error?.hint,
       });
-      
+
       // Retry without optional fields - let database use defaults
       // This handles ANY error, not just column-related ones
       try {
         [report] = await db
-          .insert(analysisReports)
-          .values({
-            userId: user.id,
-            repositoryId: repo.id,
-            overallScore: analysisResult.overallScore,
-            // Omit optional score fields - they may not exist in DB
-            issues: analysisResult.issues || [],
-            recommendations: analysisResult.recommendations || [],
-            shareToken: shareToken, // Still include shareToken as it's useful
-            // Omit isAIPowered - let database use default (0)
-          })
-          .returning();
-        
-        logger.info('Analysis report saved successfully without isAIPowered (using default)', {
+        .insert(analysisReports)
+        .values({
+          id: randomUUID(), // ✅ EXPLICIT UUID
+                userId: user.id,
+                repositoryId: repo.id,
+                overallScore: analysisResult.overallScore,
+                // Omit optional score fields - they may not exist in DB
+                issues: analysisResult.issues || [],
+                recommendations: analysisResult.recommendations || [],
+                shareToken: shareToken, // Still include shareToken as it's useful
+                createdAt: new Date(), // ✅ EXPLICIT TIMESTAMP
+                // Omit isAIPowered - let database use default (0)
+        })
+        .returning();
+
+        logger.info('Analysis report saved successfully without optional fields (using defaults)', {
           reportId: report.id,
           isAIPowered: report.isAIPowered ?? 0,
         });
@@ -218,7 +222,7 @@ export async function POST(
             detail: retryErr?.detail,
           },
         });
-        
+
         return NextResponse.json(
           {
             error: 'Failed to save analysis results',
