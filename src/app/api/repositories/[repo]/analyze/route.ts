@@ -143,6 +143,8 @@ export async function POST(
     const shareToken = randomUUID().substring(0, 8);
 
     // First attempt: try with all fields including isAIPowered
+    // Note: id and createdAt are auto-generated (serial and defaultNow)
+    // qualityScore uses maintainabilityScore as fallback (they're similar concepts)
     try {
       [report] = await db
        .insert(analysisReports)
@@ -151,6 +153,7 @@ export async function POST(
          repositoryId: repo.id,
          overallScore: analysisResult.overallScore,
          securityScore: analysisResult.securityScore ?? null,
+         qualityScore: analysisResult.maintainabilityScore ?? null, // Use maintainability as quality fallback
          performanceScore: analysisResult.performanceScore ?? null,
          maintainabilityScore: analysisResult.maintainabilityScore ?? null,
          techDebtScore: analysisResult.techDebtScore ?? null,
@@ -158,6 +161,9 @@ export async function POST(
          recommendations: analysisResult.recommendations || [],
          shareToken: shareToken,
          isAiPowered: isAIPoweredValue,
+         // id: auto-generated (serial)
+         // createdAt: auto-generated (defaultNow)
+         // analysisDate: auto-generated (defaultNow)
       })
       .returning();
 

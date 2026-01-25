@@ -29,15 +29,15 @@ interface Recommendation {
 
 // Users table (linked to Clerk)
 export const users = pgTable('users', {
-  id: text('id').primaryKey(), // ✅ TEXT for Clerk IDs
-                             clerkId: text('clerk_id').unique().notNull(),
-                             email: text('email').notNull(),
-                             firstName: text('first_name'),
-                             lastName: text('last_name'),
-                             githubUsername: text('github_username'),
-                             githubToken: text('github_token'),
-                             createdAt: timestamp('created_at').defaultNow().notNull(),
-                             updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  id: text('id').primaryKey().notNull(), // TEXT for Clerk IDs - must be provided by application
+  clerkId: text('clerk_id').unique().notNull(),
+  email: text('email').notNull(),
+  firstName: text('first_name'),
+  lastName: text('last_name'),
+  githubUsername: text('github_username'),
+  githubToken: text('github_token'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
 
 // Repositories table

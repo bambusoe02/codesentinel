@@ -5,6 +5,7 @@ import { eq } from 'drizzle-orm';
 import { NextResponse } from 'next/server';
 import { encrypt, isEncryptionConfigured } from '@/lib/encryption';
 import { logger } from '@/lib/logger';
+import { randomUUID } from 'crypto';
 
 export async function POST() {
   try {
@@ -103,9 +104,14 @@ export async function POST() {
     }
 
     // Create new user
+    // Generate id explicitly (TEXT field, not auto-increment)
+    // Use Clerk's userId as the id for consistency, or generate UUID if needed
+    const userDbId = userId || randomUUID();
+    
     const [newUser] = await db
       .insert(users)
       .values({
+        id: userDbId, // Explicit TEXT id - required, no default
         clerkId: userId,
         email: clerkUser.emailAddresses[0]?.emailAddress || '',
         firstName: clerkUser.firstName || null,
