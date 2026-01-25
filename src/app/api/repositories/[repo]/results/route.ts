@@ -151,14 +151,16 @@ export async function GET(
     // Ensure isAIPowered is included in response
     // Handle integer (0/1) from database - convert to number
     // If column doesn't exist or is null, default to 0
-    const isAIPoweredValue = (report.isAIPowered !== undefined && report.isAIPowered !== null) 
-      ? (report.isAIPowered === 1 ? 1 : 0)
+    // Use type assertion to handle both cases (with and without isAIPowered)
+    const reportWithAI = report as typeof report & { isAIPowered?: number };
+    const isAIPoweredValue = (reportWithAI.isAIPowered !== undefined && reportWithAI.isAIPowered !== null) 
+      ? (reportWithAI.isAIPowered === 1 ? 1 : 0)
       : 0;
     
     logger.info('Returning analysis report', {
       reportId: report.id,
-      isAIPowered: report.isAIPowered,
-      isAIPoweredType: typeof report.isAIPowered,
+      isAIPowered: reportWithAI.isAIPowered ?? 'not present',
+      isAIPoweredType: typeof reportWithAI.isAIPowered,
       isAIPoweredValue,
       overallScore: report.overallScore,
       createdAt: report.createdAt,
