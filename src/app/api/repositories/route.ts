@@ -116,10 +116,10 @@ export async function GET() {
               name: repo.name,
               description: repo.description || null,
               htmlUrl: repo.html_url,
-              owner: repo.owner as { login: string; avatar_url?: string },
-              stargazersCount: repo.stargazers_count,
+              stars: repo.stargazers_count,
+              forks: repo.forks_count,
               language: repo.language || null,
-              topics: repo.topics || [],
+              isPrivate: repo.private ? 1 : 0,
               updatedAt: new Date(),
             })
             .where(eq(repositories.id, existing.id))
@@ -132,14 +132,15 @@ export async function GET() {
             .insert(repositories)
             .values({
               userId: user.id,
+              githubRepoId: repo.id,
               name: repo.name,
               fullName: repo.full_name,
               description: repo.description || null,
               htmlUrl: repo.html_url,
-              owner: repo.owner as { login: string; avatar_url?: string },
-              stargazersCount: repo.stargazers_count,
+              stars: repo.stargazers_count,
+              forks: repo.forks_count,
               language: repo.language || null,
-              topics: repo.topics || [],
+              isPrivate: repo.private ? 1 : 0,
             })
             .returning();
 
