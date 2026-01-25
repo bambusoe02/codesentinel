@@ -5,6 +5,7 @@ import { eq } from 'drizzle-orm';
 import { NextResponse } from 'next/server';
 import { encrypt, isEncryptionConfigured } from '@/lib/encryption';
 import { logger } from '@/lib/logger';
+import { parseDbError, isUniqueConstraintError } from '@/lib/error-parser';
 
 export async function POST() {
   try {
@@ -280,31 +281,22 @@ export async function POST() {
 
       return NextResponse.json({ success: true, user: newUser });
     } catch (insertError: unknown) {
-      const error = insertError as { message?: string; code?: string; detail?: string; constraint?: string; cause?: { code?: string; detail?: string; constraint?: string } };
+      // Parse error using utility function
+      const parsedError = parseDbError(insertError);
       
       // Zwiększ szczegółowość logowania błędów
       console.error('=== INSERT ERROR ===');
-      console.error('Error message:', error?.message);
-      console.error('Error code:', error?.code);
-      console.error('Error detail:', error?.detail);
-      console.error('Error constraint:', error?.constraint);
-      
-      // Check nested cause for NeonDbError
-      if (error?.cause) {
-        const cause = error.cause as { code?: string; detail?: string; constraint?: string };
-        console.error('Error cause code:', cause?.code);
-        console.error('Error cause detail:', cause?.detail);
-        console.error('Error cause constraint:', cause?.constraint);
-      }
-      
-      console.error('Full error:', JSON.stringify(error, null, 2));
+      console.error('Error message:', parsedError.message);
+      console.error('Error code:', parsedError.code);
+      console.error('Error detail:', parsedError.detail);
+      console.error('Error constraint:', parsedError.constraint);
+      console.error('Full error:', JSON.stringify(parsedError, null, 2));
       
       // If user already exists (unique constraint violation), update instead
-      const errorCode = error?.code || (error?.cause as { code?: string })?.code;
-      const errorDetail = error?.detail || (error?.cause as { detail?: string })?.detail;
-      const errorConstraint = error?.constraint || (error?.cause as { constraint?: string })?.constraint;
-      
-      if (errorCode === '23505' || errorConstraint?.includes('users_pkey') || errorConstraint?.includes('clerk_id') || errorDetail?.includes('already exists')) {
+      if (isUniqueConstraintError(insertError) || 
+          parsedError.constraint?.includes('users_pkey') || 
+          parsedError.constraint?.includes('clerk_id') || 
+          parsedError.detail?.includes('already exists')) {
         console.log('User already exists (detected from error), updating instead');
         
         const updateData: {
@@ -368,11 +360,10 @@ export async function POST() {
       }
       
       // Re-throw if it's a different error
-      logger.error('Failed to upsert user in database', {
-        error: error?.message,
-        code: errorCode,
-        detail: errorDetail,
-        constraint: errorConstraint,
+      logger.error('Failed to upsert user in database', insertError, {
+        code: parsedError.code,
+        detail: parsedError.detail,
+        constraint: parsedError.constraint,
         userId,
         email: userEmail,
       });

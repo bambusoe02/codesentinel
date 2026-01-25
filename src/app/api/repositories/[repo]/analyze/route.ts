@@ -2,6 +2,7 @@ import { auth } from '@clerk/nextjs/server';
 import { db } from '@/lib/db';
 import { users, repositories, analysisReports } from '@/lib/schema';
 import { eq, and } from 'drizzle-orm';
+import { parseDbError, getDbErrorMessage } from '@/lib/error-parser';
 import { NextResponse } from 'next/server';
 import { GitHubClient } from '@/lib/github';
 import { CodeAnalyzer } from '@/lib/analyzer';
@@ -133,14 +134,76 @@ export async function POST(
     let report;
     const isAIPoweredValue = analysisResult.isAIPowered === true ? 1 : 0;
 
+    // Validate and prepare JSONB data
+    const reportData = analysisResult.issues || [];
+    const recommendations = analysisResult.recommendations || [];
+    
+    // Check JSONB size (PostgreSQL JSONB has ~1GB limit, but we'll be conservative)
+    const reportDataSize = JSON.stringify(reportData).length;
+    const recommendationsSize = JSON.stringify(recommendations).length;
+    const maxJsonbSize = 10 * 1024 * 1024; // 10MB limit
+    
+    if (reportDataSize > maxJsonbSize) {
+      logger.warn('Report data too large, truncating', {
+        originalSize: reportDataSize,
+        maxSize: maxJsonbSize,
+        issuesCount: reportData.length,
+      });
+      // Keep only first 100 issues if too large
+      reportData.splice(100);
+    }
+    
+    if (recommendationsSize > maxJsonbSize) {
+      logger.warn('Recommendations too large, truncating', {
+        originalSize: recommendationsSize,
+        maxSize: maxJsonbSize,
+        recommendationsCount: recommendations.length,
+      });
+      recommendations.splice(50); // Keep only first 50 recommendations
+    }
+
     logger.info('Saving analysis report', {
       overallScore: analysisResult.overallScore,
-      issuesCount: analysisResult.issues?.length || 0,
+      issuesCount: reportData.length,
+      recommendationsCount: recommendations.length,
+      reportDataSize,
+      recommendationsSize,
       isAIPowered: isAIPoweredValue,
     });
 
-    // Generate share token for public sharing
-    const shareToken = randomUUID().substring(0, 8);
+    // Generate unique share token for public sharing
+    // Retry if token already exists (UNIQUE constraint)
+    let shareToken: string;
+    let attempts = 0;
+    const maxAttempts = 5;
+    
+    do {
+      shareToken = randomUUID().substring(0, 8);
+      attempts++;
+      
+      // Check if token already exists
+      try {
+        const [existing] = await db
+          .select({ shareToken: analysisReports.shareToken })
+          .from(analysisReports)
+          .where(eq(analysisReports.shareToken, shareToken))
+          .limit(1);
+        
+        if (!existing) {
+          break; // Token is unique
+        }
+      } catch (checkError) {
+        // If check fails, continue with token anyway (will fail on insert if duplicate)
+        logger.warn('Failed to check shareToken uniqueness, continuing', { error: checkError });
+        break;
+      }
+      
+      if (attempts >= maxAttempts) {
+        // Fallback to longer token if too many collisions
+        shareToken = randomUUID().replace(/-/g, '').substring(0, 16);
+        break;
+      }
+    } while (attempts < maxAttempts);
 
     // First attempt: try with all fields including isAIPowered
     // Note: id and createdAt are auto-generated (serial and defaultNow)
@@ -161,8 +224,10 @@ export async function POST(
         performanceScore: analysisResult.performanceScore ?? null,
         maintainabilityScore: analysisResult.maintainabilityScore ?? null,
         techDebtScore: analysisResult.techDebtScore ?? null,
-        reportDataLength: analysisResult.issues?.length || 0,
-        recommendationsLength: analysisResult.recommendations?.length || 0,
+        reportDataLength: reportData.length,
+        recommendationsLength: recommendations.length,
+        reportDataSize,
+        recommendationsSize,
         shareToken: shareToken,
         isAiPowered: isAIPoweredValue,
       });
@@ -178,8 +243,8 @@ export async function POST(
          performanceScore: analysisResult.performanceScore ?? null,
          maintainabilityScore: analysisResult.maintainabilityScore ?? null,
          techDebtScore: analysisResult.techDebtScore ?? null,
-         reportData: analysisResult.issues || [],
-         recommendations: analysisResult.recommendations || [],
+         reportData: reportData,
+         recommendations: recommendations,
          shareToken: shareToken,
          isAiPowered: isAIPoweredValue,
          // id: auto-generated (serial)
@@ -194,29 +259,13 @@ export async function POST(
         isAiPowered: report.isAiPowered,
       });
     } catch (firstError: unknown) {
-      // Log the error for debugging
-      // NeonDbError has nested structure: error.cause contains the actual error details
-      const error = firstError as {
-        message?: string;
-        code?: string;
-        constraint?: string;
-        detail?: string;
-        hint?: string;
-        cause?: {
-          code?: string;
-          detail?: string;
-          constraint?: string;
-          message?: string;
-          name?: string;
-        };
-      };
-      
-      // Extract error details from nested cause (NeonDbError structure)
-      const errorCode = error?.code || error?.cause?.code || '';
-      const errorDetail = error?.detail || error?.cause?.detail || '';
-      const errorConstraint = error?.constraint || error?.cause?.constraint || '';
-      const errorMessage = error?.message || error?.cause?.message || 'Unknown error';
-      const errorHint = error?.hint || '';
+      // Parse error using utility function
+      const parsedError = parseDbError(firstError);
+      const errorCode = parsedError.code || '';
+      const errorDetail = parsedError.detail || '';
+      const errorConstraint = parsedError.constraint || '';
+      const errorMessage = parsedError.message || 'Unknown error';
+      const errorHint = parsedError.hint || '';
 
       console.error('=== FIRST INSERT ATTEMPT FAILED ===');
       console.error('Error message:', errorMessage);
@@ -224,8 +273,7 @@ export async function POST(
       console.error('Error detail:', errorDetail);
       console.error('Error constraint:', errorConstraint);
       console.error('Error hint:', errorHint);
-      console.error('Error cause:', error?.cause);
-      console.error('Full error object:', JSON.stringify(error, null, 2));
+      console.error('Full error object:', JSON.stringify(firstError, null, 2));
 
       logger.warn('First insert attempt failed, retrying without optional fields', {
         message: errorMessage,
@@ -248,8 +296,8 @@ export async function POST(
           userId: user.id,
           repositoryId: repo.id,
           overallScore: analysisResult.overallScore,
-          reportDataLength: analysisResult.issues?.length || 0,
-          recommendationsLength: analysisResult.recommendations?.length || 0,
+          reportDataLength: reportData.length,
+          recommendationsLength: recommendations.length,
           shareToken: shareToken,
         });
 
@@ -260,8 +308,8 @@ export async function POST(
           repositoryId: repo.id,
           overallScore: analysisResult.overallScore,
           // Omit optional score fields - they may not exist in DB
-          reportData: analysisResult.issues || [],
-          recommendations: analysisResult.recommendations || [],
+          reportData: reportData,
+          recommendations: recommendations,
           shareToken: shareToken, // Still include shareToken as it's useful
           // Omit isAiPowered - let database use default (0)
         })
@@ -273,25 +321,12 @@ export async function POST(
           isAiPowered: report.isAiPowered ?? 0,
         });
       } catch (retryError: unknown) {
-        // Parse retry error with nested cause structure
-        const retryErr = retryError as { 
-          message?: string; 
-          code?: string; 
-          detail?: string; 
-          constraint?: string;
-          cause?: {
-            code?: string;
-            detail?: string;
-            constraint?: string;
-            message?: string;
-          };
-        };
-        
-        // Extract from nested cause if available
-        const retryCode = retryErr?.code || retryErr?.cause?.code || '';
-        const retryDetail = retryErr?.detail || retryErr?.cause?.detail || '';
-        const retryConstraint = retryErr?.constraint || retryErr?.cause?.constraint || '';
-        const retryMessage = retryErr?.message || retryErr?.cause?.message || 'Unknown error';
+        // Parse retry error using utility function
+        const retryParsed = parseDbError(retryError);
+        const retryCode = retryParsed.code || '';
+        const retryDetail = retryParsed.detail || '';
+        const retryConstraint = retryParsed.constraint || '';
+        const retryMessage = retryParsed.message || 'Unknown error';
         
         console.error('=== BOTH INSERT ATTEMPTS FAILED ===');
         console.error('First attempt error:', errorMessage);
@@ -302,8 +337,7 @@ export async function POST(
         console.error('Retry error code:', retryCode);
         console.error('Retry error detail:', retryDetail);
         console.error('Retry error constraint:', retryConstraint);
-        console.error('Retry error cause:', retryErr?.cause);
-        console.error('Full retry error object:', JSON.stringify(retryErr, null, 2));
+        console.error('Full retry error object:', JSON.stringify(retryError, null, 2));
         
         logger.error('Both insert attempts failed', {
           firstAttempt: {
