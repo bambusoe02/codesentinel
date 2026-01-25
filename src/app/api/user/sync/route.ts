@@ -61,119 +61,8 @@ export async function POST() {
       logger.warn('Could not retrieve GitHub OAuth token from Clerk', { error });
     }
 
-    // Check if user exists in database
-    console.log('Checking for existing user with clerkId:', userId);
-    const existingUser = await db
-      .select()
-      .from(users)
-      .where(eq(users.clerkId, userId))
-      .limit(1);
-
-    console.log('Existing user check result:', {
-      found: existingUser.length > 0,
-      count: existingUser.length,
-      userId: existingUser[0]?.id,
-      clerkId: existingUser[0]?.clerkId,
-    });
-
-    if (existingUser.length > 0) {
-      console.log('User exists, updating instead of creating');
-      const existingUserRecord = existingUser[0];
-      
-      // Check if user.id is UUID (old format) and needs to be updated to Clerk userId
-      const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(existingUserRecord.id);
-      
-      if (isUUID && existingUserRecord.clerkId === userId) {
-        console.log('User has UUID as id, updating to Clerk userId:', {
-          oldId: existingUserRecord.id,
-          newId: userId,
-        });
-        
-        // Update id from UUID to Clerk userId
-        // This requires updating users table and all related tables
-        try {
-          // First, update repositories.user_id using Drizzle ORM
-          await db
-            .update(repositories)
-            .set({ userId: userId })
-            .where(eq(repositories.userId, existingUserRecord.id));
-          
-          console.log('Updated repositories.user_id from UUID to Clerk userId');
-          
-          // Then, update analysis_reports.user_id using Drizzle ORM
-          await db
-            .update(analysisReports)
-            .set({ userId: userId })
-            .where(eq(analysisReports.userId, existingUserRecord.id));
-          
-          console.log('Updated analysis_reports.user_id from UUID to Clerk userId');
-          
-          // Finally, update users.id
-          await db
-            .update(users)
-            .set({ id: userId })
-            .where(eq(users.clerkId, userId));
-          
-          console.log('Successfully updated user.id from UUID to Clerk userId');
-        } catch (migrationError: unknown) {
-          const error = migrationError as { message?: string; code?: string; detail?: string };
-          console.error('Failed to migrate user.id from UUID to Clerk userId:', {
-            error: error?.message,
-            code: error?.code,
-            detail: error?.detail,
-          });
-          logger.error('Failed to migrate user.id from UUID to Clerk userId', {
-            error: error?.message,
-            code: error?.code,
-            detail: error?.detail,
-            oldId: existingUserRecord.id,
-            newId: userId,
-          });
-          // Continue with normal update even if migration fails
-        }
-      }
-      
-      // Update existing user
-      // Only update token if we got a new one from Clerk (don't overwrite manual token unless we have a new one)
-      const updateData: {
-        email: string;
-        firstName: string | null;
-        lastName: string | null;
-        githubUsername: string | null;
-        githubToken?: string | null;
-        updatedAt: Date;
-      } = {
-        email: clerkUser.emailAddresses[0]?.emailAddress || '',
-        firstName: clerkUser.firstName || null,
-        lastName: clerkUser.lastName || null,
-        githubUsername: githubUsername || existingUser[0].githubUsername,
-        updatedAt: new Date(),
-      };
-
-      // Update token only if we successfully retrieved a new one
-      if (encryptedGitHubToken) {
-        updateData.githubToken = encryptedGitHubToken;
-      }
-
-      await db
-        .update(users)
-        .set(updateData)
-        .where(eq(users.clerkId, userId));
-
-      return NextResponse.json({ 
-        success: true, 
-        user: { ...existingUser[0], email: clerkUser.emailAddresses[0]?.emailAddress } 
-      });
-    }
-
-    // Create new user
-    console.log('No existing user found, creating new user');
-    // Use Clerk's userId as the id for consistency (TEXT field, not auto-increment)
-    const userDbId = userId; // Używaj bezpośrednio Clerk userId (już jest string)
-    
-    // Walidacja email
+    // Validate email
     const userEmail = clerkUser.emailAddresses[0]?.emailAddress;
-    console.log('User email validation:', { userEmail, hasEmail: !!userEmail });
     if (!userEmail) {
       logger.error('User email is missing', { userId, clerkUser: { id: clerkUser.id } });
       return NextResponse.json(
@@ -182,60 +71,82 @@ export async function POST() {
       );
     }
 
-    try {
-      // Dodaj logowanie przed insertem (console.log zawsze pojawia się w Vercel)
-      console.log('Creating user:', {
-        userId: userDbId,
-        clerkId: userId,
-        email: userEmail,
-        hasEmail: !!userEmail,
-      });
+    // Check if user exists in database (for UUID migration)
+    console.log('Checking for existing user with clerkId:', userId);
+    const existingUser = await db
+      .select()
+      .from(users)
+      .where(eq(users.clerkId, userId))
+      .limit(1);
 
-      const result = await db
+    // If user exists with UUID as id, migrate to Clerk userId
+    if (existingUser.length > 0) {
+      const existingUserRecord = existingUser[0];
+      const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(existingUserRecord.id);
+      
+      if (isUUID && existingUserRecord.clerkId === userId) {
+        console.log('Migrating user.id from UUID to Clerk userId:', {
+          oldId: existingUserRecord.id,
+          newId: userId,
+        });
+        
+        try {
+          // Update repositories.user_id
+          await db
+            .update(repositories)
+            .set({ userId: userId })
+            .where(eq(repositories.userId, existingUserRecord.id));
+          
+          // Update analysis_reports.user_id
+          await db
+            .update(analysisReports)
+            .set({ userId: userId })
+            .where(eq(analysisReports.userId, existingUserRecord.id));
+          
+          // Update users.id
+          await db
+            .update(users)
+            .set({ id: userId })
+            .where(eq(users.clerkId, userId));
+          
+          console.log('Successfully migrated user.id from UUID to Clerk userId');
+        } catch (migrationError: unknown) {
+          const error = migrationError as { message?: string; code?: string; detail?: string };
+          console.error('Migration failed, continuing with update:', {
+            error: error?.message,
+            code: error?.code,
+          });
+          logger.error('Failed to migrate user.id from UUID to Clerk userId', {
+            error: error?.message,
+            code: error?.code,
+            oldId: existingUserRecord.id,
+            newId: userId,
+          });
+        }
+      }
+    }
+
+    // Upsert user - create or update
+    console.log('Upserting user:', {
+      userId,
+      email: userEmail,
+      hasGitHubToken: !!encryptedGitHubToken,
+    });
+
+    try {
+      // Try insert first
+      const [newUser] = await db
         .insert(users)
         .values({
-          id: userDbId, // Explicit TEXT id - required, no default
+          id: userId, // Use Clerk userId directly as id
           clerkId: userId,
           email: userEmail,
           firstName: clerkUser.firstName || null,
           lastName: clerkUser.lastName || null,
           githubUsername: githubUsername,
-          githubToken: encryptedGitHubToken, // Encrypted token from Clerk
+          githubToken: encryptedGitHubToken,
         })
         .returning();
-
-      // Walidacja wyniku
-      console.log('Insert result:', {
-        resultLength: result?.length,
-        hasResult: !!result,
-        resultType: Array.isArray(result) ? 'array' : typeof result,
-      });
-
-      if (!result || result.length === 0) {
-        const errorMsg = 'Insert returned empty result';
-        console.error(errorMsg, { userId: userDbId, clerkId: userId, email: userEmail });
-        logger.error(errorMsg, { userId: userDbId, clerkId: userId, email: userEmail });
-        throw new Error(errorMsg);
-      }
-
-      const [newUser] = result;
-
-      if (!newUser) {
-        const errorMsg = 'Insert returned undefined user';
-        console.error(errorMsg, { 
-          userId: userDbId, 
-          clerkId: userId, 
-          email: userEmail,
-          resultLength: result.length,
-        });
-        logger.error(errorMsg, { 
-          userId: userDbId, 
-          clerkId: userId, 
-          email: userEmail,
-          resultLength: result.length,
-        });
-        throw new Error(errorMsg);
-      }
 
       console.log('User created successfully:', {
         id: newUser.id,
@@ -252,17 +163,59 @@ export async function POST() {
       return NextResponse.json({ success: true, user: newUser });
     } catch (insertError: unknown) {
       const error = insertError as { message?: string; code?: string; detail?: string; constraint?: string };
-      logger.error('Failed to create user in database', {
+      
+      // If user already exists (unique constraint violation), update instead
+      if (error?.code === '23505' || error?.constraint?.includes('clerk_id') || error?.message?.includes('unique')) {
+        console.log('User already exists, updating instead');
+        
+        const updateData: {
+          email: string;
+          firstName: string | null;
+          lastName: string | null;
+          githubUsername: string | null;
+          githubToken?: string | null;
+          updatedAt: Date;
+        } = {
+          email: userEmail,
+          firstName: clerkUser.firstName || null,
+          lastName: clerkUser.lastName || null,
+          githubUsername: githubUsername,
+          updatedAt: new Date(),
+        };
+
+        // Only update token if we got a new one from Clerk
+        if (encryptedGitHubToken) {
+          updateData.githubToken = encryptedGitHubToken;
+        }
+
+        const [updatedUser] = await db
+          .update(users)
+          .set(updateData)
+          .where(eq(users.clerkId, userId))
+          .returning();
+
+        console.log('User updated successfully:', {
+          id: updatedUser.id,
+          clerkId: updatedUser.clerkId,
+          email: updatedUser.email,
+        });
+
+        return NextResponse.json({ 
+          success: true, 
+          user: updatedUser 
+        });
+      }
+      
+      // Re-throw if it's a different error
+      logger.error('Failed to upsert user in database', {
         error: error?.message,
         code: error?.code,
         detail: error?.detail,
         constraint: error?.constraint,
-        userId: userDbId,
-        clerkId: userId,
+        userId,
         email: userEmail,
       });
       
-      // Re-throw to be caught by outer catch
       throw insertError;
     }
   } catch (error) {

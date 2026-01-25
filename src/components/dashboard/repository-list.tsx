@@ -67,7 +67,7 @@ export function RepositoryList() {
   const queryClient = useQueryClient();
   const [analyzingRepo, setAnalyzingRepo] = useState<string | null>(null);
 
-  const { data: repositories = [], isLoading, error, refetch } = useQuery({
+  const { data: repositories = [], isLoading, error, refetch, isRefetching } = useQuery({
     queryKey: ['repositories'],
     queryFn: fetchRepositories,
   });
@@ -164,9 +164,18 @@ export function RepositoryList() {
             <p className="text-muted-foreground mb-4">
               {error instanceof Error ? error.message : 'Failed to load repositories'}
             </p>
-            <Button onClick={() => refetch()}>
-              <RefreshCw className="w-4 h-4 mr-2" />
-              Try Again
+            <Button onClick={() => refetch()} disabled={isRefetching}>
+              {isRefetching ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Retrying...
+                </>
+              ) : (
+                <>
+                  <RefreshCw className="w-4 h-4 mr-2" />
+                  Try Again
+                </>
+              )}
             </Button>
           </div>
         </CardContent>
@@ -179,12 +188,37 @@ export function RepositoryList() {
       <CardHeader className="flex flex-row items-center justify-between gap-2">
         <CardTitle className="text-lg sm:text-xl">Your Repositories</CardTitle>
         <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={() => refetch()} className="hidden sm:flex">
-            <RefreshCw className="w-4 h-4 mr-2" />
-            Refresh
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={() => refetch()} 
+            className="hidden sm:flex"
+            disabled={isRefetching}
+          >
+            {isRefetching ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                Refreshing...
+              </>
+            ) : (
+              <>
+                <RefreshCw className="w-4 h-4 mr-2" />
+                Refresh
+              </>
+            )}
           </Button>
-          <Button variant="outline" size="sm" onClick={() => refetch()} className="sm:hidden">
-            <RefreshCw className="w-4 h-4" />
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={() => refetch()} 
+            className="sm:hidden"
+            disabled={isRefetching}
+          >
+            {isRefetching ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <RefreshCw className="w-4 h-4" />
+            )}
           </Button>
         </div>
       </CardHeader>

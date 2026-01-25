@@ -16,6 +16,7 @@ import { useUIStore } from '@/lib/stores/ui-store';
 import dynamic from 'next/dynamic';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { DashboardNav } from './dashboard-nav';
+import { useRouter } from 'next/navigation';
 
 // Check if Clerk is available at runtime
 let isClerkAvailable = false;
@@ -44,6 +45,19 @@ interface DashboardHeaderProps {
 
 export function DashboardHeader({}: DashboardHeaderProps = {}) {
   const { setSearchQuery, isMobileNavOpen, setMobileNav } = useUIStore();
+  const router = useRouter();
+
+  const handleNewScan = () => {
+    // Navigate to repositories section or trigger repository selection
+    router.push('/dashboard#repositories');
+    // Scroll to repositories section after navigation
+    setTimeout(() => {
+      const element = document.getElementById('repositories');
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth' });
+      }
+    }, 100);
+  };
 
   return (
     <>
@@ -90,11 +104,19 @@ export function DashboardHeader({}: DashboardHeaderProps = {}) {
             </Button>
 
             {/* Actions - Hide text on mobile */}
-            <Button size="sm" className="hidden sm:flex items-center space-x-2">
+            <Button 
+              size="sm" 
+              className="hidden sm:flex items-center space-x-2"
+              onClick={handleNewScan}
+            >
               <Plus className="w-4 h-4" />
               <span>New Scan</span>
             </Button>
-            <Button size="sm" className="sm:hidden">
+            <Button 
+              size="sm" 
+              className="sm:hidden"
+              onClick={handleNewScan}
+            >
               <Plus className="w-4 h-4" />
             </Button>
 

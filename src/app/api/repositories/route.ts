@@ -34,8 +34,12 @@ export async function GET() {
       .limit(1);
 
     if (!user) {
-      logger.error('User not found in repositories route', { clerkId: userId });
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+      logger.warn('User not found in repositories route, returning empty array', { clerkId: userId });
+      // Return empty array instead of error - user needs to sync first
+      return NextResponse.json({ 
+        repositories: [],
+        message: 'User not synced. Please refresh the page to sync your account.'
+      });
     }
 
     // Log user.id to debug UUID vs TEXT issue
