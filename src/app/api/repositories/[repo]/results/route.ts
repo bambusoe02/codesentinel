@@ -103,7 +103,7 @@ export async function GET(
               userId: analysisReports.userId,
               repositoryId: analysisReports.repositoryId,
               overallScore: analysisReports.overallScore,
-              issues: analysisReports.issues,
+              reportData: analysisReports.reportData,
               recommendations: analysisReports.recommendations,
               shareToken: analysisReports.shareToken,
               createdAt: analysisReports.createdAt,
@@ -152,10 +152,13 @@ export async function GET(
     // Handle integer (0/1) from database - convert to number
     // If column doesn't exist or is null, default to 0
     // Use type assertion to handle both cases (with and without isAIPowered)
-    const reportWithAI = report as typeof report & { isAIPowered?: number };
+    const reportWithAI = report as typeof report & { isAIPowered?: number; reportData?: unknown[] };
     const isAIPoweredValue = (reportWithAI.isAIPowered !== undefined && reportWithAI.isAIPowered !== null) 
       ? (reportWithAI.isAIPowered === 1 ? 1 : 0)
       : 0;
+    
+    // Map reportData back to issues for backward compatibility with frontend
+    const reportData = Array.isArray(reportWithAI.reportData) ? reportWithAI.reportData : [];
     
     logger.info('Returning analysis report', {
       reportId: report.id,
@@ -164,11 +167,13 @@ export async function GET(
       isAIPoweredValue,
       overallScore: report.overallScore,
       createdAt: report.createdAt,
+      issuesCount: reportData.length,
     });
 
     return NextResponse.json({ 
       report: {
         ...report,
+        issues: reportData, // Map reportData to issues for backward compatibility
         isAIPowered: isAIPoweredValue, // Ensure it's always a number (0 or 1)
       }
     }, {

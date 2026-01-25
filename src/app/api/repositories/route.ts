@@ -69,7 +69,7 @@ export async function GET() {
             id: analysisReports.id,
             overallScore: analysisReports.overallScore,
             createdAt: analysisReports.createdAt,
-            issues: analysisReports.issues,
+            reportData: analysisReports.reportData,
           })
           .from(analysisReports)
           .where(eq(analysisReports.repositoryId, repo.id))
@@ -78,7 +78,10 @@ export async function GET() {
 
         return {
           ...repo,
-          latestAnalysis: latestAnalysis || null,
+          latestAnalysis: latestAnalysis ? {
+            ...latestAnalysis,
+            issues: Array.isArray(latestAnalysis.reportData) ? latestAnalysis.reportData : [],
+          } : null,
         };
       })
     );
@@ -149,7 +152,7 @@ export async function GET() {
             id: analysisReports.id,
             overallScore: analysisReports.overallScore,
             createdAt: analysisReports.createdAt,
-            issues: analysisReports.issues,
+            reportData: analysisReports.reportData,
           })
           .from(analysisReports)
           .where(eq(analysisReports.repositoryId, repoRecord.id))
@@ -158,7 +161,10 @@ export async function GET() {
 
         return {
           ...repoRecord,
-          latestAnalysis: latestAnalysis || null,
+          latestAnalysis: latestAnalysis ? {
+            ...latestAnalysis,
+            issues: Array.isArray(latestAnalysis.reportData) ? latestAnalysis.reportData : [],
+          } : null,
         };
       })
     );
@@ -192,7 +198,7 @@ export async function GET() {
                   id: analysisReports.id,
                   overallScore: analysisReports.overallScore,
                   createdAt: analysisReports.createdAt,
-                  issues: analysisReports.issues,
+                  reportData: analysisReports.reportData,
                 })
                 .from(analysisReports)
                 .where(eq(analysisReports.repositoryId, repo.id))
@@ -201,7 +207,10 @@ export async function GET() {
 
               return {
                 ...repo,
-                latestAnalysis: latestAnalysis || null,
+                latestAnalysis: latestAnalysis ? {
+                  ...latestAnalysis,
+                  issues: Array.isArray(latestAnalysis.reportData) ? latestAnalysis.reportData : [],
+                } : null,
               };
             })
           );

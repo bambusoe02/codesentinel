@@ -64,18 +64,22 @@ export async function GET(
     }
 
     const report = reports[0];
+    
+    // Access reportData field (renamed from issues)
+    const reportData = (report as typeof report & { reportData?: unknown[] }).reportData || [];
+    const isAiPowered = (report as typeof report & { isAiPowered?: number }).isAiPowered ?? 0;
 
     return NextResponse.json({
       reportId: report.id,
-      isAIPowered: report.isAIPowered,
-      isAIPoweredType: typeof report.isAIPowered,
-      isAIPoweredValue: report.isAIPowered === 1 ? 'AI' : report.isAIPowered === 0 ? 'Rule-based' : 'Unknown',
+      isAiPowered: isAiPowered,
+      isAiPoweredType: typeof isAiPowered,
+      isAiPoweredValue: isAiPowered === 1 ? 'AI' : isAiPowered === 0 ? 'Rule-based' : 'Unknown',
       createdAt: report.createdAt,
       overallScore: report.overallScore,
-      issuesCount: Array.isArray(report.issues) ? report.issues.length : 0,
-      message: report.isAIPowered === 1 
+      issuesCount: Array.isArray(reportData) ? reportData.length : 0,
+      message: isAiPowered === 1 
         ? '✅ This analysis was AI-powered' 
-        : report.isAIPowered === 0 
+        : isAiPowered === 0 
         ? '📋 This analysis was rule-based' 
         : '⚠️ Unknown analysis type',
     });

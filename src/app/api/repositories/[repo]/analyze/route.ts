@@ -145,27 +145,25 @@ export async function POST(
     // First attempt: try with all fields including isAIPowered
     try {
       [report] = await db
-      .insert(analysisReports)
-      .values({
-        id: randomUUID(), // ✅ EXPLICIT UUID
-              userId: user.id,
-              repositoryId: repo.id,
-              overallScore: analysisResult.overallScore,
-              securityScore: analysisResult.securityScore ?? null,
-              performanceScore: analysisResult.performanceScore ?? null,
-              maintainabilityScore: analysisResult.maintainabilityScore ?? null,
-              techDebtScore: analysisResult.techDebtScore ?? null,
-              issues: analysisResult.issues || [],
-              recommendations: analysisResult.recommendations || [],
-              shareToken: shareToken,
-              isAIPowered: isAIPoweredValue,
-              createdAt: new Date(), // ✅ EXPLICIT TIMESTAMP
+       .insert(analysisReports)
+       .values({
+         userId: user.id,
+         repositoryId: repo.id,
+         overallScore: analysisResult.overallScore,
+         securityScore: analysisResult.securityScore ?? null,
+         performanceScore: analysisResult.performanceScore ?? null,
+         maintainabilityScore: analysisResult.maintainabilityScore ?? null,
+         techDebtScore: analysisResult.techDebtScore ?? null,
+         reportData: analysisResult.issues || [],
+         recommendations: analysisResult.recommendations || [],
+         shareToken: shareToken,
+         isAiPowered: isAIPoweredValue,
       })
       .returning();
 
-      logger.info('Analysis report saved successfully with isAIPowered', {
+      logger.info('Analysis report saved successfully with isAiPowered', {
         reportId: report.id,
-        isAIPowered: report.isAIPowered,
+        isAiPowered: report.isAiPowered,
       });
     } catch (firstError: unknown) {
       // Log the error for debugging
@@ -192,22 +190,20 @@ export async function POST(
         [report] = await db
         .insert(analysisReports)
         .values({
-          id: randomUUID(), // ✅ EXPLICIT UUID
-                userId: user.id,
-                repositoryId: repo.id,
-                overallScore: analysisResult.overallScore,
-                // Omit optional score fields - they may not exist in DB
-                issues: analysisResult.issues || [],
-                recommendations: analysisResult.recommendations || [],
-                shareToken: shareToken, // Still include shareToken as it's useful
-                createdAt: new Date(), // ✅ EXPLICIT TIMESTAMP
-                // Omit isAIPowered - let database use default (0)
+          userId: user.id,
+          repositoryId: repo.id,
+          overallScore: analysisResult.overallScore,
+          // Omit optional score fields - they may not exist in DB
+          reportData: analysisResult.issues || [],
+          recommendations: analysisResult.recommendations || [],
+          shareToken: shareToken, // Still include shareToken as it's useful
+          // Omit isAiPowered - let database use default (0)
         })
         .returning();
 
         logger.info('Analysis report saved successfully without optional fields (using defaults)', {
           reportId: report.id,
-          isAIPowered: report.isAIPowered ?? 0,
+          isAiPowered: report.isAiPowered ?? 0,
         });
       } catch (retryError: unknown) {
         const retryErr = retryError as { message?: string; code?: string; detail?: string };

@@ -99,18 +99,21 @@ export async function GET(
         techDebtScore?: number | null;
       };
       
+      // Access reportData field (renamed from issues)
+      const reportData = (report as typeof report & { reportData?: unknown[] }).reportData || [];
+      
       return {
         id: report.id,
         overallScore: report.overallScore,
-        issues: report.issues || [],
+        issues: Array.isArray(reportData) ? reportData : [],
         recommendations: report.recommendations || [],
         createdAt: report.createdAt,
-        // Use database columns if available, otherwise calculate from issues
-        securityScore: reportWithScores.securityScore ?? calculateCategoryScore(report.issues || [], 'security'),
-        performanceScore: reportWithScores.performanceScore ?? calculateCategoryScore(report.issues || [], 'performance'),
-        maintainabilityScore: reportWithScores.maintainabilityScore ?? calculateCategoryScore(report.issues || [], 'maintainability'),
+        // Use database columns if available, otherwise calculate from reportData
+        securityScore: reportWithScores.securityScore ?? calculateCategoryScore(Array.isArray(reportData) ? reportData : [], 'security'),
+        performanceScore: reportWithScores.performanceScore ?? calculateCategoryScore(Array.isArray(reportData) ? reportData : [], 'performance'),
+        maintainabilityScore: reportWithScores.maintainabilityScore ?? calculateCategoryScore(Array.isArray(reportData) ? reportData : [], 'maintainability'),
         techDebtScore: reportWithScores.techDebtScore ?? null,
-        reliabilityScore: calculateCategoryScore(report.issues || [], 'reliability'),
+        reliabilityScore: calculateCategoryScore(Array.isArray(reportData) ? reportData : [], 'reliability'),
       };
     });
 

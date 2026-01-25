@@ -40,7 +40,7 @@ export async function GET() {
         repositoryFullName: repositories.fullName,
         overallScore: analysisReports.overallScore,
         createdAt: analysisReports.createdAt,
-        issues: analysisReports.issues,
+        reportData: analysisReports.reportData,
       })
       .from(analysisReports)
       .innerJoin(repositories, eq(analysisReports.repositoryId, repositories.id))
@@ -48,7 +48,13 @@ export async function GET() {
       .orderBy(desc(analysisReports.createdAt))
       .limit(10);
 
-    return NextResponse.json({ activities: reports });
+    // Map reportData to issues for backward compatibility
+    const activities = reports.map(report => ({
+      ...report,
+      issues: Array.isArray(report.reportData) ? report.reportData : [],
+    }));
+
+    return NextResponse.json({ activities });
   } catch (error) {
     logger.error('Error fetching recent activity', error);
     return NextResponse.json(
