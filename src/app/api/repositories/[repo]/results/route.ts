@@ -90,8 +90,8 @@ export async function GET(
     const report = reports[0];
     
     // Ensure isAIPowered is included in response
-    // Handle both integer (0/1) and boolean values from database
-    const isAIPoweredValue = report.isAIPowered === 1 || report.isAIPowered === true ? 1 : 0;
+    // Handle integer (0/1) from database - convert to number
+    const isAIPoweredValue = report.isAIPowered === 1 ? 1 : 0;
     
     logger.info('Returning analysis report', {
       reportId: report.id,
