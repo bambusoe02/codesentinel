@@ -1,7 +1,7 @@
 import { auth, clerkClient } from '@clerk/nextjs/server';
 import { db } from '@/lib/db';
 import { users } from '@/lib/schema';
-import { eq } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import { NextResponse } from 'next/server';
 import { encrypt, isEncryptionConfigured } from '@/lib/encryption';
 import { logger } from '@/lib/logger';
@@ -78,6 +78,57 @@ export async function POST() {
 
     if (existingUser.length > 0) {
       console.log('User exists, updating instead of creating');
+      const existingUserRecord = existingUser[0];
+      
+      // Check if user.id is UUID (old format) and needs to be updated to Clerk userId
+      const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(existingUserRecord.id);
+      
+      if (isUUID && existingUserRecord.clerkId === userId) {
+        console.log('User has UUID as id, updating to Clerk userId:', {
+          oldId: existingUserRecord.id,
+          newId: userId,
+        });
+        
+        // Update id from UUID to Clerk userId
+        // This requires updating users table and all related tables
+        try {
+          // First, update repositories.user_id
+          await db.execute(sql`
+            UPDATE repositories 
+            SET user_id = ${userId} 
+            WHERE user_id = ${existingUserRecord.id}
+          `);
+          
+          // Then, update analysis_reports.user_id
+          await db.execute(sql`
+            UPDATE analysis_reports 
+            SET user_id = ${userId} 
+            WHERE user_id = ${existingUserRecord.id}
+          `);
+          
+          // Finally, update users.id
+          await db
+            .update(users)
+            .set({ id: userId })
+            .where(eq(users.clerkId, userId));
+          
+          console.log('Successfully updated user.id from UUID to Clerk userId');
+        } catch (migrationError: unknown) {
+          const error = migrationError as { message?: string; code?: string };
+          console.error('Failed to migrate user.id from UUID to Clerk userId:', {
+            error: error?.message,
+            code: error?.code,
+          });
+          logger.error('Failed to migrate user.id from UUID to Clerk userId', {
+            error: error?.message,
+            code: error?.code,
+            oldId: existingUserRecord.id,
+            newId: userId,
+          });
+          // Continue with normal update even if migration fails
+        }
+      }
+      
       // Update existing user
       // Only update token if we got a new one from Clerk (don't overwrite manual token unless we have a new one)
       const updateData: {
