@@ -117,7 +117,15 @@ export async function POST() {
     }
 
     try {
-      const [newUser] = await db
+      // Dodaj logowanie przed insertem (console.log zawsze pojawia się w Vercel)
+      console.log('Creating user:', {
+        userId: userDbId,
+        clerkId: userId,
+        email: userEmail,
+        hasEmail: !!userEmail,
+      });
+
+      const result = await db
         .insert(users)
         .values({
           id: userDbId, // Explicit TEXT id - required, no default
@@ -129,6 +137,45 @@ export async function POST() {
           githubToken: encryptedGitHubToken, // Encrypted token from Clerk
         })
         .returning();
+
+      // Walidacja wyniku
+      console.log('Insert result:', {
+        resultLength: result?.length,
+        hasResult: !!result,
+        resultType: Array.isArray(result) ? 'array' : typeof result,
+      });
+
+      if (!result || result.length === 0) {
+        const errorMsg = 'Insert returned empty result';
+        console.error(errorMsg, { userId: userDbId, clerkId: userId, email: userEmail });
+        logger.error(errorMsg, { userId: userDbId, clerkId: userId, email: userEmail });
+        throw new Error(errorMsg);
+      }
+
+      const [newUser] = result;
+
+      if (!newUser) {
+        const errorMsg = 'Insert returned undefined user';
+        console.error(errorMsg, { 
+          userId: userDbId, 
+          clerkId: userId, 
+          email: userEmail,
+          resultLength: result.length,
+        });
+        logger.error(errorMsg, { 
+          userId: userDbId, 
+          clerkId: userId, 
+          email: userEmail,
+          resultLength: result.length,
+        });
+        throw new Error(errorMsg);
+      }
+
+      console.log('User created successfully:', {
+        id: newUser.id,
+        clerkId: newUser.clerkId,
+        email: newUser.email,
+      });
 
       logger.info('User created successfully', { 
         userId: newUser.id, 
