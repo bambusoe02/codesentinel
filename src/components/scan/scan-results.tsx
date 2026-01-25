@@ -425,15 +425,22 @@ export function ScanResults({ repoName }: ScanResultsProps) {
   return (
     <div className="space-y-6">
       {/* Header with Refresh Button */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between mb-4">
         <h1 className="text-2xl font-bold">Analysis Results</h1>
         <Button
           variant="outline"
           size="sm"
-          onClick={() => {
+          onClick={async () => {
+            // Invalidate all related queries
             queryClient.invalidateQueries({ queryKey: ['analysis-results', repoName] });
             queryClient.invalidateQueries({ queryKey: ['analysis-history', repoName] });
-            refetch();
+            queryClient.invalidateQueries({ queryKey: ['repositories'] });
+            // Force refetch
+            await refetch();
+            // Also refetch history if available
+            if (historyData) {
+              queryClient.refetchQueries({ queryKey: ['analysis-history', repoName] });
+            }
           }}
         >
           <RefreshCw className="w-4 h-4 mr-2" />

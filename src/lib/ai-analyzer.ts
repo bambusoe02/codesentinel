@@ -82,26 +82,26 @@ export class AICodeAnalyzer {
       const prompt = this.buildAnalysisPrompt(codeSnippets, repoContext);
 
       // Call Claude with code analysis prompt
-      // Try claude-3-5-sonnet-20241022 first, fallback to claude-3-sonnet-20240229
+      // Use Claude 4.5 models (latest available in 2026)
+      // Reference: https://platform.claude.com/docs/en/about-claude/models/overview
+      // List of models to try (from newest to oldest)
+      const modelsToTry = [
+        'claude-sonnet-4-5-20250929',      // Claude Sonnet 4.5 (latest, best for coding)
+        'claude-haiku-4-5-20251001',       // Claude Haiku 4.5 (faster fallback)
+        'claude-sonnet-4-20250514',         // Claude Sonnet 4 (legacy)
+        'claude-3-5-sonnet-20241022',      // Claude 3.5 Sonnet (old fallback)
+        'claude-3-5-haiku-20241022',       // Claude 3.5 Haiku (final fallback)
+      ];
+
       let message;
-      try {
-        message = await this.client.messages.create({
-          model: 'claude-3-5-sonnet-20241022',
-          max_tokens: 4000,
-          messages: [
-            {
-              role: 'user',
-              content: prompt,
-            },
-          ],
-        });
-      } catch (modelError: unknown) {
-        // If model not found, try older version
-        const error = modelError as { status?: number; message?: string; type?: string };
-        if (error?.status === 400 || error?.message?.includes('model')) {
-          logger.warn('Claude 3.5 Sonnet not available, trying Claude 3 Sonnet', { error });
+      let usedModel: string | null = null;
+
+      // Try each model in order until one works
+      for (const model of modelsToTry) {
+        try {
+          logger.info(`Attempting to use Claude model: ${model}`);
           message = await this.client.messages.create({
-            model: 'claude-3-sonnet-20240229',
+            model: model,
             max_tokens: 4000,
             messages: [
               {
@@ -110,14 +110,25 @@ export class AICodeAnalyzer {
               },
             ],
           });
-        } else {
-          logger.error('Claude API call failed', modelError, {
-            errorMessage: error?.message,
-            errorStatus: error?.status,
-            errorType: error?.type,
+          usedModel = model;
+          logger.info(`✅ Successfully used Claude model: ${model}`);
+          break; // Success - exit loop
+        } catch (modelError: unknown) {
+          const error = modelError as { status?: number; message?: string; type?: string };
+          logger.warn(`Model ${model} not available, trying next...`, {
+            error: error?.message,
+            status: error?.status,
+            type: error?.type,
           });
-          throw modelError;
+          // Continue to next model
+          continue;
         }
+      }
+
+      // If no model worked, throw error
+      if (!message || !usedModel) {
+        logger.error('All Claude models failed - no model available');
+        throw new Error('Failed to connect to Claude API - all models unavailable');
       }
 
       // Extract text from response

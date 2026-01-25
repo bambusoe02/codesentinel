@@ -68,12 +68,43 @@ export async function GET(
     }
 
     // Get latest analysis report
-    const reports = await db
-      .select()
-      .from(analysisReports)
-      .where(eq(analysisReports.repositoryId, repo.id))
-      .orderBy(desc(analysisReports.createdAt))
-      .limit(1);
+    let reports;
+    try {
+      reports = await db
+        .select()
+        .from(analysisReports)
+        .where(eq(analysisReports.repositoryId, repo.id))
+        .orderBy(desc(analysisReports.createdAt))
+        .limit(1);
+    } catch (dbError: unknown) {
+      const error = dbError as { message?: string; code?: string };
+      const errorMessage = error?.message || '';
+      const errorCode = error?.code || '';
+      
+      // Check if error is related to is_ai_powered column
+      const isColumnError = 
+        errorMessage.includes('is_ai_powered') ||
+        errorMessage.includes('isAIPowered') ||
+        errorCode === '42703' || // undefined_column
+        errorCode === '42P01'; // undefined_table
+      
+      if (isColumnError) {
+        logger.warn('is_ai_powered column does not exist in database, using default value', {
+          error: errorMessage,
+          code: errorCode,
+        });
+        // Return error indicating database schema needs update
+        return NextResponse.json({ 
+          error: 'Database schema mismatch',
+          details: 'The is_ai_powered column does not exist in the database. Please run database migrations.',
+          code: 'SCHEMA_MISMATCH',
+        }, { status: 500 });
+      } else {
+        // Re-throw if it's a different error
+        logger.error('Database query failed', dbError);
+        throw dbError;
+      }
+    }
 
     if (reports.length === 0) {
       logger.info('No analysis found for repository', {
@@ -83,6 +114,7 @@ export async function GET(
       });
       return NextResponse.json({ 
         error: 'No analysis found',
+        code: 'ANALYSIS_NOT_FOUND',
         message: 'Analysis has not been run yet or is still in progress',
       }, { status: 404 });
     }
@@ -91,7 +123,10 @@ export async function GET(
     
     // Ensure isAIPowered is included in response
     // Handle integer (0/1) from database - convert to number
-    const isAIPoweredValue = report.isAIPowered === 1 ? 1 : 0;
+    // If column doesn't exist or is null, default to 0
+    const isAIPoweredValue = (report.isAIPowered !== undefined && report.isAIPowered !== null) 
+      ? (report.isAIPowered === 1 ? 1 : 0)
+      : 0;
     
     logger.info('Returning analysis report', {
       reportId: report.id,
