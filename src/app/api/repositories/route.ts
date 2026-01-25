@@ -34,8 +34,22 @@ export async function GET() {
       .limit(1);
 
     if (!user) {
+      logger.error('User not found in repositories route', { clerkId: userId });
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
+
+    // Log user.id to debug UUID vs TEXT issue
+    console.log('User found for repositories query:', {
+      userId: user.id,
+      userIdType: typeof user.id,
+      userIdLength: user.id?.length,
+      clerkId: user.clerkId,
+    });
+    logger.info('User found for repositories query', {
+      userId: user.id,
+      userIdType: typeof user.id,
+      clerkId: user.clerkId,
+    });
 
     // Try to get GitHub token from user's stored token (decrypt if encrypted), fallback to environment
     let githubToken: string | null = null;
