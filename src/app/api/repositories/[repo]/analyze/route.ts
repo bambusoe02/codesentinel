@@ -195,28 +195,44 @@ export async function POST(
       });
     } catch (firstError: unknown) {
       // Log the error for debugging
+      // NeonDbError has nested structure: error.cause contains the actual error details
       const error = firstError as {
         message?: string;
         code?: string;
         constraint?: string;
         detail?: string;
         hint?: string;
+        cause?: {
+          code?: string;
+          detail?: string;
+          constraint?: string;
+          message?: string;
+          name?: string;
+        };
       };
-      const errorMessage = error?.message || '';
-      const errorCode = error?.code || '';
+      
+      // Extract error details from nested cause (NeonDbError structure)
+      const errorCode = error?.code || error?.cause?.code || '';
+      const errorDetail = error?.detail || error?.cause?.detail || '';
+      const errorConstraint = error?.constraint || error?.cause?.constraint || '';
+      const errorMessage = error?.message || error?.cause?.message || 'Unknown error';
+      const errorHint = error?.hint || '';
 
       console.error('=== FIRST INSERT ATTEMPT FAILED ===');
       console.error('Error message:', errorMessage);
       console.error('Error code:', errorCode);
-      console.error('Error detail:', error?.detail);
-      console.error('Error constraint:', error?.constraint);
-      console.error('Error hint:', error?.hint);
+      console.error('Error detail:', errorDetail);
+      console.error('Error constraint:', errorConstraint);
+      console.error('Error hint:', errorHint);
+      console.error('Error cause:', error?.cause);
+      console.error('Full error object:', JSON.stringify(error, null, 2));
 
       logger.warn('First insert attempt failed, retrying without optional fields', {
         message: errorMessage,
         code: errorCode,
-        detail: error?.detail,
-        hint: error?.hint,
+        detail: errorDetail,
+        constraint: errorConstraint,
+        hint: errorHint,
       });
 
       // Retry without optional fields - let database use defaults
@@ -257,35 +273,70 @@ export async function POST(
           isAiPowered: report.isAiPowered ?? 0,
         });
       } catch (retryError: unknown) {
-        const retryErr = retryError as { message?: string; code?: string; detail?: string; constraint?: string };
+        // Parse retry error with nested cause structure
+        const retryErr = retryError as { 
+          message?: string; 
+          code?: string; 
+          detail?: string; 
+          constraint?: string;
+          cause?: {
+            code?: string;
+            detail?: string;
+            constraint?: string;
+            message?: string;
+          };
+        };
+        
+        // Extract from nested cause if available
+        const retryCode = retryErr?.code || retryErr?.cause?.code || '';
+        const retryDetail = retryErr?.detail || retryErr?.cause?.detail || '';
+        const retryConstraint = retryErr?.constraint || retryErr?.cause?.constraint || '';
+        const retryMessage = retryErr?.message || retryErr?.cause?.message || 'Unknown error';
         
         console.error('=== BOTH INSERT ATTEMPTS FAILED ===');
         console.error('First attempt error:', errorMessage);
-        console.error('Retry attempt error:', retryErr?.message);
-        console.error('Retry error detail:', retryErr?.detail);
-        console.error('Retry error code:', retryErr?.code);
-        console.error('Retry error constraint:', retryErr?.constraint);
+        console.error('First attempt code:', errorCode);
+        console.error('First attempt detail:', errorDetail);
+        console.error('First attempt constraint:', errorConstraint);
+        console.error('Retry attempt error:', retryMessage);
+        console.error('Retry error code:', retryCode);
+        console.error('Retry error detail:', retryDetail);
+        console.error('Retry error constraint:', retryConstraint);
+        console.error('Retry error cause:', retryErr?.cause);
+        console.error('Full retry error object:', JSON.stringify(retryErr, null, 2));
         
         logger.error('Both insert attempts failed', {
           firstAttempt: {
             message: errorMessage,
             code: errorCode,
-            detail: error?.detail,
-            constraint: error?.constraint,
+            detail: errorDetail,
+            constraint: errorConstraint,
           },
           retryAttempt: {
-            message: retryErr?.message,
-            code: retryErr?.code,
-            detail: retryErr?.detail,
-            constraint: retryErr?.constraint,
+            message: retryMessage,
+            code: retryCode,
+            detail: retryDetail,
+            constraint: retryConstraint,
           },
         });
 
         return NextResponse.json(
           {
             error: 'Failed to save analysis results',
-            details: `Database insert failed. First attempt: ${errorMessage}. Retry attempt: ${retryErr?.message || 'Unknown error'}`,
+            details: `Database insert failed. First attempt: ${errorMessage} (code: ${errorCode || 'N/A'}, detail: ${errorDetail || 'N/A'}). Retry attempt: ${retryMessage} (code: ${retryCode || 'N/A'}, detail: ${retryDetail || 'N/A'})`,
             code: 'DATABASE_INSERT_FAILED',
+            firstAttempt: {
+              message: errorMessage,
+              code: errorCode,
+              detail: errorDetail,
+              constraint: errorConstraint,
+            },
+            retryAttempt: {
+              message: retryMessage,
+              code: retryCode,
+              detail: retryDetail,
+              constraint: retryConstraint,
+            },
           },
           { status: 500 }
         );
