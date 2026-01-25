@@ -150,6 +150,72 @@ export async function POST() {
       hasGitHubToken: !!encryptedGitHubToken,
     });
 
+    // If user already exists, update instead of insert
+    if (existingUser.length > 0) {
+      console.log('User already exists, updating instead of inserting');
+      const existingUserRecord = existingUser[0];
+      
+      const updateData: {
+        email: string;
+        firstName: string | null;
+        lastName: string | null;
+        githubUsername: string | null;
+        githubToken?: string | null;
+        updatedAt: Date;
+      } = {
+        email: userEmail,
+        firstName: clerkUser.firstName || null,
+        lastName: clerkUser.lastName || null,
+        githubUsername: githubUsername,
+        updatedAt: new Date(),
+      };
+
+      // Only update token if we got a new one from Clerk
+      if (encryptedGitHubToken) {
+        updateData.githubToken = encryptedGitHubToken;
+      }
+
+      try {
+        const [updatedUser] = await db
+          .update(users)
+          .set(updateData)
+          .where(eq(users.clerkId, userId))
+          .returning();
+
+        console.log('✅ User updated successfully:', {
+          id: updatedUser.id,
+          clerkId: updatedUser.clerkId,
+          email: updatedUser.email,
+        });
+
+        logger.info('User updated successfully', {
+          userId: updatedUser.id,
+          clerkId: updatedUser.clerkId,
+          email: updatedUser.email,
+        });
+
+        return NextResponse.json({ 
+          success: true, 
+          user: updatedUser 
+        });
+      } catch (updateError: unknown) {
+        const error = updateError as { message?: string; code?: string; detail?: string };
+        console.error('Failed to update user:', {
+          error: error?.message,
+          code: error?.code,
+          detail: error?.detail,
+        });
+        logger.error('Failed to update user', {
+          error: error?.message,
+          code: error?.code,
+          detail: error?.detail,
+          clerkId: userId,
+        });
+        throw updateError;
+      }
+    }
+
+    // User doesn't exist, create new one
     try {
       // Add detailed logging BEFORE insert
       console.log('=== ATTEMPTING USER INSERT ===');
@@ -214,7 +280,7 @@ export async function POST() {
 
       return NextResponse.json({ success: true, user: newUser });
     } catch (insertError: unknown) {
-      const error = insertError as { message?: string; code?: string; detail?: string; constraint?: string };
+      const error = insertError as { message?: string; code?: string; detail?: string; constraint?: string; cause?: { code?: string; detail?: string; constraint?: string } };
       
       // Zwiększ szczegółowość logowania błędów
       console.error('=== INSERT ERROR ===');
@@ -222,11 +288,24 @@ export async function POST() {
       console.error('Error code:', error?.code);
       console.error('Error detail:', error?.detail);
       console.error('Error constraint:', error?.constraint);
+      
+      // Check nested cause for NeonDbError
+      if (error?.cause) {
+        const cause = error.cause as { code?: string; detail?: string; constraint?: string };
+        console.error('Error cause code:', cause?.code);
+        console.error('Error cause detail:', cause?.detail);
+        console.error('Error cause constraint:', cause?.constraint);
+      }
+      
       console.error('Full error:', JSON.stringify(error, null, 2));
       
       // If user already exists (unique constraint violation), update instead
-      if (error?.code === '23505' || error?.constraint?.includes('clerk_id') || error?.message?.includes('unique')) {
-        console.log('User already exists, updating instead');
+      const errorCode = error?.code || (error?.cause as { code?: string })?.code;
+      const errorDetail = error?.detail || (error?.cause as { detail?: string })?.detail;
+      const errorConstraint = error?.constraint || (error?.cause as { constraint?: string })?.constraint;
+      
+      if (errorCode === '23505' || errorConstraint?.includes('users_pkey') || errorConstraint?.includes('clerk_id') || errorDetail?.includes('already exists')) {
+        console.log('User already exists (detected from error), updating instead');
         
         const updateData: {
           email: string;
@@ -248,30 +327,52 @@ export async function POST() {
           updateData.githubToken = encryptedGitHubToken;
         }
 
-        const [updatedUser] = await db
-          .update(users)
-          .set(updateData)
-          .where(eq(users.clerkId, userId))
-          .returning();
+        try {
+          const [updatedUser] = await db
+            .update(users)
+            .set(updateData)
+            .where(eq(users.clerkId, userId))
+            .returning();
 
-        console.log('User updated successfully:', {
-          id: updatedUser.id,
-          clerkId: updatedUser.clerkId,
-          email: updatedUser.email,
-        });
+          console.log('✅ User updated successfully (after insert error):', {
+            id: updatedUser.id,
+            clerkId: updatedUser.clerkId,
+            email: updatedUser.email,
+          });
 
-        return NextResponse.json({ 
-          success: true, 
-          user: updatedUser 
-        });
+          logger.info('User updated successfully (after insert error)', {
+            userId: updatedUser.id,
+            clerkId: updatedUser.clerkId,
+            email: updatedUser.email,
+          });
+
+          return NextResponse.json({ 
+            success: true, 
+            user: updatedUser 
+          });
+        } catch (updateError: unknown) {
+          const updateErr = updateError as { message?: string; code?: string; detail?: string };
+          console.error('Failed to update user after insert error:', {
+            error: updateErr?.message,
+            code: updateErr?.code,
+            detail: updateErr?.detail,
+          });
+          logger.error('Failed to update user after insert error', {
+            error: updateErr?.message,
+            code: updateErr?.code,
+            detail: updateErr?.detail,
+            clerkId: userId,
+          });
+          throw updateError;
+        }
       }
       
       // Re-throw if it's a different error
       logger.error('Failed to upsert user in database', {
         error: error?.message,
-        code: error?.code,
-        detail: error?.detail,
-        constraint: error?.constraint,
+        code: errorCode,
+        detail: errorDetail,
+        constraint: errorConstraint,
         userId,
         email: userEmail,
       });
