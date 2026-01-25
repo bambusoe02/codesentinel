@@ -35,7 +35,7 @@ export const users = pgTable('users', {
   firstName: text('first_name'),
   lastName: text('last_name'),
   githubUsername: text('github_username'),
-  githubToken: text('github_token'),
+  githubToken: text('github_access_token'), // ✅ Fixed: matches database column name
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
