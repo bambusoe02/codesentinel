@@ -246,12 +246,27 @@ export async function POST(
          reportData: reportData,
          recommendations: recommendations,
          shareToken: shareToken,
-         isAiPowered: isAIPoweredValue,
+         // Omit isAiPowered - column may not exist in database, let DB use default
          // id: auto-generated (serial)
          // createdAt: auto-generated (defaultNow)
          // analysisDate: auto-generated (defaultNow)
       })
-      .returning();
+      .returning({
+        id: analysisReports.id,
+        userId: analysisReports.userId,
+        repositoryId: analysisReports.repositoryId,
+        overallScore: analysisReports.overallScore,
+        securityScore: analysisReports.securityScore,
+        qualityScore: analysisReports.qualityScore,
+        performanceScore: analysisReports.performanceScore,
+        maintainabilityScore: analysisReports.maintainabilityScore,
+        techDebtScore: analysisReports.techDebtScore,
+        reportData: analysisReports.reportData,
+        recommendations: analysisReports.recommendations,
+        shareToken: analysisReports.shareToken,
+        createdAt: analysisReports.createdAt,
+        // Explicitly omit isAiPowered from returning to avoid errors if column doesn't exist
+      });
 
       console.log('✅ Analysis report saved successfully (first attempt)');
       
