@@ -246,7 +246,7 @@ export async function POST(
          reportData: reportData,
          recommendations: recommendations,
          shareToken: shareToken,
-         // Omit isAiPowered - column may not exist in database, let DB use default
+         isAiPowered: isAIPoweredValue, // ✅ Column exists in database (NOT NULL, default 0)
          // id: auto-generated (serial)
          // createdAt: auto-generated (defaultNow)
          // analysisDate: auto-generated (defaultNow)
@@ -264,8 +264,8 @@ export async function POST(
         reportData: analysisReports.reportData,
         recommendations: analysisReports.recommendations,
         shareToken: analysisReports.shareToken,
+        isAiPowered: analysisReports.isAiPowered, // ✅ Column exists in database
         createdAt: analysisReports.createdAt,
-        // Explicitly omit isAiPowered from returning to avoid errors if column doesn't exist
       });
 
       console.log('✅ Analysis report saved successfully (first attempt)');
@@ -331,8 +331,8 @@ export async function POST(
           // Omit optional score fields - they may not exist in DB
           reportData: reportData,
           recommendations: recommendations,
-          shareToken: shareToken, // Still include shareToken as it's useful
-          // Omit isAiPowered - let database use default (0) if column exists
+          shareToken: shareToken,
+          isAiPowered: isAIPoweredValue, // ✅ Column exists in database (NOT NULL, default 0)
         })
         .returning({
           id: analysisReports.id,
@@ -342,8 +342,8 @@ export async function POST(
           reportData: analysisReports.reportData,
           recommendations: analysisReports.recommendations,
           shareToken: analysisReports.shareToken,
+          isAiPowered: analysisReports.isAiPowered, // ✅ Column exists in database
           createdAt: analysisReports.createdAt,
-          // Explicitly omit isAiPowered and other optional columns from returning
         });
 
         console.log('✅ Analysis report saved successfully (second attempt)');
