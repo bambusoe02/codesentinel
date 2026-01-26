@@ -59,21 +59,21 @@ export const repositories = pgTable('repositories', {
 
 // Analysis reports table
 export const analysisReports = pgTable('analysis_reports', {
-  id: serial('id').primaryKey(), // ✅ SERIAL = auto-increment integer
-                                       userId: text('user_id').references(() => users.id).notNull(),
-                                       repositoryId: integer('repository_id').references(() => repositories.id).notNull(), // ✅ INTEGER
+  // ✅ KOLEJNOŚĆ MUSI BYĆ JAK W BAZIE!
+  id: serial('id').primaryKey(),
+                                       repositoryId: integer('repository_id').references(() => repositories.id).notNull(),
                                        analysisDate: timestamp('analysis_date').defaultNow(),
                                        overallScore: integer('overall_score').notNull(),
                                        securityScore: integer('security_score'),
                                        qualityScore: integer('quality_score'),
-                                       performanceScore: integer('performance_score'),
                                        maintainabilityScore: integer('maintainability_score'),
-                                       techDebtScore: integer('tech_debt_score'),
-                                       reportData: jsonb('report_data').$type<AnalysisIssue[]>(), // ✅ report_data not issues
-                                       recommendations: jsonb('recommendations').$type<Recommendation[]>(),
-                                       shareToken: text('share_token'),
-                                       isAiPowered: integer('is_ai_powered').notNull().default(0),
+                                       reportData: jsonb('report_data').$type<AnalysisIssue[]>(),
                                        createdAt: timestamp('created_at').defaultNow().notNull(),
+                                       isAiPowered: integer('is_ai_powered').notNull().default(0),
+                                       performanceScore: integer('performance_score'),
+                                       techDebtScore: integer('tech_debt_score'),
+                                       recommendations: jsonb('recommendations').$type<Recommendation[]>(),
+                                       userId: text('user_id').references(() => users.id).notNull(), // ✅ NA KOŃCU!
 });
 
 // Repository metrics table
