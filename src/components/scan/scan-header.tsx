@@ -60,15 +60,16 @@ export function ScanHeader({ repoName }: ScanHeaderProps) {
             <Share2 className="w-4 h-4 mr-2" />
             Share
           </Button>
-          {onExportPDF && (
+          {/* PDF Export temporarily disabled */}
+          {false && onExportPDF && (
             <Button
               variant="outline"
               size="sm"
               onClick={onExportPDF}
-              disabled={isExportingPDF}
+              disabled={true}
             >
               <Download className="w-4 h-4 mr-2" />
-              {isExportingPDF ? 'Exporting...' : 'Export PDF'}
+              Export PDF (Disabled)
             </Button>
           )}
           <Button size="sm">

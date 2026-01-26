@@ -262,19 +262,16 @@ export function ScanResults({ repoName }: ScanResultsProps) {
     }
   }, [exportReport, setIsExportingPDF]); // Only depend on stable functions
   
-  // Expose PDF export handler to context - only when report is available
-  // This effect only runs when report changes, not when data changes
+  // PDF Export temporarily disabled - do not expose handler to context
+  // This prevents the export button from appearing and any automatic exports
   useEffect(() => {
-    if (report) {
-      setOnExportPDF(handleExportPDF);
-    } else {
-      setOnExportPDF(undefined);
-    }
+    // Always set to undefined to disable PDF export
+    setOnExportPDF(undefined);
     
     return () => {
       setOnExportPDF(undefined);
     };
-  }, [report, handleExportPDF, setOnExportPDF]);
+  }, [setOnExportPDF]);
   
   // Check if analysis was AI-powered (from report metadata or default to false)
   // isAIPowered is stored as integer (0 or 1) in database
