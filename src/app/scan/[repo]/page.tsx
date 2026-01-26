@@ -6,6 +6,7 @@ import { ScanResults } from '@/components/scan/scan-results';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ErrorBoundary } from '@/components/error-boundary';
 import { AnalysisPageSkeleton } from '@/components/skeletons/analysis-page-skeleton';
+import { PDFExportProvider } from '@/contexts/pdf-export-context';
 
 // Force dynamic rendering to avoid build-time issues
 export const dynamic = 'force-dynamic';
@@ -26,13 +27,15 @@ export default async function ScanPage({ params }: ScanPageProps) {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
-      <ErrorBoundary>
-        <Suspense fallback={<AnalysisPageSkeleton />}>
-          <ScanPageContent repoName={repoName} />
-        </Suspense>
-      </ErrorBoundary>
-    </div>
+    <PDFExportProvider>
+      <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
+        <ErrorBoundary>
+          <Suspense fallback={<AnalysisPageSkeleton />}>
+            <ScanPageContent repoName={repoName} />
+          </Suspense>
+        </ErrorBoundary>
+      </div>
+    </PDFExportProvider>
   );
 }
 

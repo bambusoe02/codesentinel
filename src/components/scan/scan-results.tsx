@@ -22,6 +22,10 @@ import {
   CheckCircle2,
 } from 'lucide-react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { usePDFExport } from '@/hooks/use-pdf-export';
+import { PDFReportData } from '@/lib/pdf-generator';
+import { usePDFExportContext } from '@/contexts/pdf-export-context';
+import { useEffect } from 'react';
 
 // Lazy load heavy components
 const TrendChart = lazy(() =>
@@ -195,6 +199,67 @@ export function ScanResults({ repoName }: ScanResultsProps) {
   const securityScore = categoryScores.security;
   const performanceScore = categoryScores.performance;
   const maintainabilityScore = categoryScores.maintainability;
+  const techDebtScore = report?.techDebtScore || 0;
+  
+  // PDF Export hooks
+  const { exportReport, isExporting: isExportingPDF } = usePDFExport();
+  const { setOnExportPDF, setIsExportingPDF } = usePDFExportContext();
+  
+  // Prepare PDF data from real analysis results and expose to context
+  useEffect(() => {
+    if (!report) {
+      setOnExportPDF(undefined);
+      return;
+    }
+    
+    const handleExportPDF = async () => {
+      const pdfData: PDFReportData = {
+        repoName,
+        overallScore,
+        techDebtScore,
+        securityScore,
+        performanceScore,
+        maintainabilityScore,
+        issues: rawIssues.map((issue: AnalysisIssue) => ({
+          severity: issue.severity || 'medium',
+          title: issue.title || 'Untitled Issue',
+          description: issue.description || '',
+          impact: issue.impact || '',
+          fix: issue.fix || '',
+        })),
+        recommendations: Array.isArray(recommendations) ? recommendations.map((rec: any) => ({
+          title: rec.title || 'Recommendation',
+          description: rec.description || '',
+          priority: rec.priority || 5,
+          impact: rec.impact || '',
+          effort: rec.effort || 'medium',
+        })) : [],
+        metrics: {
+          linesOfCode: 0, // TODO: Get from repository data if available
+          filesCount: 0, // TODO: Get from repository data if available
+          contributors: 0, // TODO: Get from repository data if available
+          languages: {}, // TODO: Get from repository data if available
+        },
+        generatedAt: report.createdAt ? new Date(report.createdAt) : new Date(),
+      };
+      
+      setIsExportingPDF(true);
+      try {
+        await exportReport(pdfData);
+      } catch (error) {
+        console.error('PDF export failed:', error);
+      } finally {
+        setIsExportingPDF(false);
+      }
+    };
+    
+    setOnExportPDF(handleExportPDF);
+    
+    // Cleanup
+    return () => {
+      setOnExportPDF(undefined);
+    };
+  }, [report, repoName, overallScore, techDebtScore, securityScore, performanceScore, maintainabilityScore, rawIssues, recommendations, exportReport, setOnExportPDF, setIsExportingPDF]);
   
   // Check if analysis was AI-powered (from report metadata or default to false)
   // isAIPowered is stored as integer (0 or 1) in database
