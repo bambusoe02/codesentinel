@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, lazy, Suspense } from 'react';
+import { useMemo, lazy, Suspense, useEffect, useCallback, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -25,7 +25,6 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { usePDFExport } from '@/hooks/use-pdf-export';
 import { PDFReportData } from '@/lib/pdf-generator';
 import { usePDFExportContext } from '@/contexts/pdf-export-context';
-import { useEffect } from 'react';
 
 // Lazy load heavy components
 const TrendChart = lazy(() =>
@@ -205,61 +204,77 @@ export function ScanResults({ repoName }: ScanResultsProps) {
   const { exportReport, isExporting: isExportingPDF } = usePDFExport();
   const { setOnExportPDF, setIsExportingPDF } = usePDFExportContext();
   
-  // Prepare PDF data from real analysis results and expose to context
+  // Prepare PDF export handler - only called when user clicks "Export PDF" button
+  // Using useRef to store latest values without causing re-renders
+  const reportRef = useRef(report);
+  const dataRef = useRef({ repoName, overallScore, techDebtScore, securityScore, performanceScore, maintainabilityScore, rawIssues, recommendations });
+  
+  // Update refs when data changes (doesn't trigger re-renders)
   useEffect(() => {
-    if (!report) {
-      setOnExportPDF(undefined);
-      return;
-    }
+    reportRef.current = report;
+    dataRef.current = { repoName, overallScore, techDebtScore, securityScore, performanceScore, maintainabilityScore, rawIssues, recommendations };
+  }, [report, repoName, overallScore, techDebtScore, securityScore, performanceScore, maintainabilityScore, rawIssues, recommendations]);
+  
+  // Create stable export handler that uses refs - only created once
+  const handleExportPDF = useCallback(async () => {
+    const currentReport = reportRef.current;
+    const currentData = dataRef.current;
     
-    const handleExportPDF = async () => {
-      const pdfData: PDFReportData = {
-        repoName,
-        overallScore,
-        techDebtScore,
-        securityScore,
-        performanceScore,
-        maintainabilityScore,
-        issues: rawIssues.map((issue: AnalysisIssue) => ({
-          severity: issue.severity || 'medium',
-          title: issue.title || 'Untitled Issue',
-          description: issue.description || '',
-          impact: issue.impact || '',
-          fix: issue.fix || '',
-        })),
-        recommendations: Array.isArray(recommendations) ? recommendations.map((rec: any) => ({
-          title: rec.title || 'Recommendation',
-          description: rec.description || '',
-          priority: rec.priority || 5,
-          impact: rec.impact || '',
-          effort: rec.effort || 'medium',
-        })) : [],
-        metrics: {
-          linesOfCode: 0, // TODO: Get from repository data if available
-          filesCount: 0, // TODO: Get from repository data if available
-          contributors: 0, // TODO: Get from repository data if available
-          languages: {}, // TODO: Get from repository data if available
-        },
-        generatedAt: report.createdAt ? new Date(report.createdAt) : new Date(),
-      };
-      
-      setIsExportingPDF(true);
-      try {
-        await exportReport(pdfData);
-      } catch (error) {
-        console.error('PDF export failed:', error);
-      } finally {
-        setIsExportingPDF(false);
-      }
+    if (!currentReport) return;
+    
+    const pdfData: PDFReportData = {
+      repoName: currentData.repoName,
+      overallScore: currentData.overallScore,
+      techDebtScore: currentData.techDebtScore,
+      securityScore: currentData.securityScore,
+      performanceScore: currentData.performanceScore,
+      maintainabilityScore: currentData.maintainabilityScore,
+      issues: currentData.rawIssues.map((issue: AnalysisIssue) => ({
+        severity: issue.severity || 'medium',
+        title: issue.title || 'Untitled Issue',
+        description: issue.description || '',
+        impact: issue.impact || '',
+        fix: issue.fix || '',
+      })),
+      recommendations: Array.isArray(currentData.recommendations) ? currentData.recommendations.map((rec: any) => ({
+        title: rec.title || 'Recommendation',
+        description: rec.description || '',
+        priority: rec.priority || 5,
+        impact: rec.impact || '',
+        effort: rec.effort || 'medium',
+      })) : [],
+      metrics: {
+        linesOfCode: 0, // TODO: Get from repository data if available
+        filesCount: 0, // TODO: Get from repository data if available
+        contributors: 0, // TODO: Get from repository data if available
+        languages: {}, // TODO: Get from repository data if available
+      },
+      generatedAt: currentReport.createdAt ? new Date(currentReport.createdAt) : new Date(),
     };
     
-    setOnExportPDF(handleExportPDF);
+    setIsExportingPDF(true);
+    try {
+      await exportReport(pdfData);
+    } catch (error) {
+      console.error('PDF export failed:', error);
+    } finally {
+      setIsExportingPDF(false);
+    }
+  }, [exportReport, setIsExportingPDF]); // Only depend on stable functions
+  
+  // Expose PDF export handler to context - only when report is available
+  // This effect only runs when report changes, not when data changes
+  useEffect(() => {
+    if (report) {
+      setOnExportPDF(handleExportPDF);
+    } else {
+      setOnExportPDF(undefined);
+    }
     
-    // Cleanup
     return () => {
       setOnExportPDF(undefined);
     };
-  }, [report, repoName, overallScore, techDebtScore, securityScore, performanceScore, maintainabilityScore, rawIssues, recommendations, exportReport, setOnExportPDF, setIsExportingPDF]);
+  }, [report, handleExportPDF, setOnExportPDF]);
   
   // Check if analysis was AI-powered (from report metadata or default to false)
   // isAIPowered is stored as integer (0 or 1) in database
