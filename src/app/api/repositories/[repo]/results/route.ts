@@ -105,7 +105,7 @@ export async function GET(
               overallScore: analysisReports.overallScore,
               reportData: analysisReports.reportData,
               recommendations: analysisReports.recommendations,
-              shareToken: analysisReports.shareToken,
+              // shareToken: analysisReports.shareToken, // ❌ Column doesn't exist in database
               createdAt: analysisReports.createdAt,
               // isAIPowered is omitted here
             })

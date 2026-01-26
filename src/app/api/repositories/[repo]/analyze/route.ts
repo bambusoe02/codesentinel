@@ -171,39 +171,9 @@ export async function POST(
       isAIPowered: isAIPoweredValue,
     });
 
-    // Generate unique share token for public sharing
-    // Retry if token already exists (UNIQUE constraint)
-    let shareToken: string;
-    let attempts = 0;
-    const maxAttempts = 5;
-    
-    do {
-      shareToken = randomUUID().substring(0, 8);
-      attempts++;
-      
-      // Check if token already exists
-      try {
-        const [existing] = await db
-          .select({ shareToken: analysisReports.shareToken })
-          .from(analysisReports)
-          .where(eq(analysisReports.shareToken, shareToken))
-          .limit(1);
-        
-        if (!existing) {
-          break; // Token is unique
-        }
-      } catch (checkError) {
-        // If check fails, continue with token anyway (will fail on insert if duplicate)
-        logger.warn('Failed to check shareToken uniqueness, continuing', { error: checkError });
-        break;
-      }
-      
-      if (attempts >= maxAttempts) {
-        // Fallback to longer token if too many collisions
-        shareToken = randomUUID().replace(/-/g, '').substring(0, 16);
-        break;
-      }
-    } while (attempts < maxAttempts);
+    // Note: shareToken column doesn't exist in database, so we skip generation
+    // If you need share tokens, add the column first:
+    // ALTER TABLE analysis_reports ADD COLUMN IF NOT EXISTS share_token TEXT;
 
     // First attempt: try with all fields including isAIPowered
     // Note: id and createdAt are auto-generated (serial and defaultNow)
@@ -228,7 +198,7 @@ export async function POST(
         recommendationsLength: recommendations.length,
         reportDataSize,
         recommendationsSize,
-        shareToken: shareToken,
+        // shareToken: shareToken, // ❌ Column doesn't exist in database
         isAiPowered: isAIPoweredValue,
       });
 
@@ -245,7 +215,7 @@ export async function POST(
          techDebtScore: analysisResult.techDebtScore ?? null,
          reportData: reportData,
          recommendations: recommendations,
-         shareToken: shareToken,
+         // shareToken: shareToken, // ❌ Column doesn't exist in database - removed
          isAiPowered: isAIPoweredValue, // ✅ Column exists in database (NOT NULL, default 0)
          // id: auto-generated (serial)
          // createdAt: auto-generated (defaultNow)
@@ -263,7 +233,7 @@ export async function POST(
         techDebtScore: analysisReports.techDebtScore,
         reportData: analysisReports.reportData,
         recommendations: analysisReports.recommendations,
-        shareToken: analysisReports.shareToken,
+        // shareToken: analysisReports.shareToken, // ❌ Column doesn't exist in database
         isAiPowered: analysisReports.isAiPowered, // ✅ Column exists in database
         createdAt: analysisReports.createdAt,
       });
@@ -318,7 +288,7 @@ export async function POST(
           overallScore: analysisResult.overallScore,
           reportDataLength: reportData.length,
           recommendationsLength: recommendations.length,
-          shareToken: shareToken,
+          // shareToken: shareToken, // ❌ Column doesn't exist in database
         });
 
         // Retry with minimal fields and explicit returning to avoid non-existent columns
@@ -331,7 +301,7 @@ export async function POST(
           // Omit optional score fields - they may not exist in DB
           reportData: reportData,
           recommendations: recommendations,
-          shareToken: shareToken,
+          // shareToken: shareToken, // ❌ Column doesn't exist in database - removed
           isAiPowered: isAIPoweredValue, // ✅ Column exists in database (NOT NULL, default 0)
         })
         .returning({
@@ -341,7 +311,7 @@ export async function POST(
           overallScore: analysisReports.overallScore,
           reportData: analysisReports.reportData,
           recommendations: analysisReports.recommendations,
-          shareToken: analysisReports.shareToken,
+          // shareToken: analysisReports.shareToken, // ❌ Column doesn't exist in database - removed
           isAiPowered: analysisReports.isAiPowered, // ✅ Column exists in database
           createdAt: analysisReports.createdAt,
         });
