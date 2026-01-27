@@ -7,7 +7,27 @@
 
 **Production-ready AI-powered GitHub repository analysis platform.** Enterprise-grade intelligent code analysis that identifies tech debt, security vulnerabilities, and performance bottlenecks in codebases.
 
-![CodeSentinel](./demo.gif)
+## 🎨 Landing Page
+
+CodeSentinel features a modern, dark-themed landing page designed for engineering teams:
+
+### Hero Section
+- **AI-Powered Code Analysis** tag with modern badge design
+- **Main Headline**: "AI-Powered GitHub Repository Analysis"
+- **Value Proposition**: Transform engineering management with intelligent code analysis, identifying tech debt, security vulnerabilities, and performance bottlenecks
+- **Call-to-Action Buttons**: Direct access to dashboard and GitHub repository
+
+### Features Showcase
+The landing page highlights six core features in an elegant 2x3 grid layout:
+
+1. **🔒 Security Analysis** - Detect vulnerabilities, exposed secrets, and attack vectors with AI-powered analysis
+2. **📈 Tech Debt Scoring** - Get quantitative tech debt scores with detailed breakdowns of code quality issues
+3. **⚡ Performance Insights** - Identify bottlenecks, memory leaks, and optimization opportunities
+4. **📊 Repository Metrics** - Track lines of code, contributor activity, and commit frequency with interactive dashboards
+5. **📄 PDF Reports** - Generate professional PDF reports with actionable recommendations and priority-ranked fixes
+6. **🔗 Shareable Links** - Share analysis results via secure, time-limited links without exposing repository data
+
+![CodeSentinel Landing Page](./public/landing-page.png)
 
 ## ✨ Features
 
