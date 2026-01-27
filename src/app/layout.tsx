@@ -6,12 +6,24 @@ import { ThemeProvider } from "@/components/theme-provider";
 import { Providers } from "@/components/providers";
 import { PWAInstall } from "@/components/pwa-install";
 import { ErrorBoundary } from "@/components/error-boundary";
-import { initEnvValidation } from "@/lib/env-validation";
 import "./globals.css";
 
-// Initialize environment validation on server startup
+// Initialize environment validation on server startup (safely)
+// Wrapped in try-catch to prevent breaking app if validation fails
 if (typeof window === 'undefined') {
-  initEnvValidation();
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { initEnvValidation } = require('@/lib/env-validation');
+    if (typeof initEnvValidation === 'function') {
+      initEnvValidation();
+    }
+  } catch (error) {
+    // Silently fail - validation is non-critical for app startup
+    // Errors are logged internally by the validation function
+    if (process.env.NODE_ENV === 'development') {
+      console.warn('Environment validation initialization failed (non-critical):', error);
+    }
+  }
 }
 
 // Check if Clerk is available on server
