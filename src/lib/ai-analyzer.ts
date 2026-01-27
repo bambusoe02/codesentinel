@@ -316,7 +316,7 @@ Ensure JSON is complete and valid - no trailing commas, all brackets closed.`;
         repaired = repaired.replace(/(".*?)([^\\])$/m, '$1"');
         
         // Try to find the last complete JSON object
-        let lastBrace = repaired.lastIndexOf('}');
+        const lastBrace = repaired.lastIndexOf('}');
         if (lastBrace > 0) {
           // Check if we have a complete object before the last brace
           const beforeLastBrace = repaired.substring(0, lastBrace);

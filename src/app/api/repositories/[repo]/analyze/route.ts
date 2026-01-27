@@ -2,13 +2,12 @@ import { auth } from '@clerk/nextjs/server';
 import { db } from '@/lib/db';
 import { users, repositories, analysisReports } from '@/lib/schema';
 import { eq, and } from 'drizzle-orm';
-import { parseDbError, getDbErrorMessage } from '@/lib/error-parser';
+import { parseDbError } from '@/lib/error-parser';
 import { NextResponse } from 'next/server';
 import { GitHubClient } from '@/lib/github';
 import { CodeAnalyzer } from '@/lib/analyzer';
 import { decrypt } from '@/lib/encryption';
 import { logger } from '@/lib/logger';
-import { randomUUID } from 'crypto';
 
 export async function POST(
   request: Request,

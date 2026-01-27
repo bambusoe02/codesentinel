@@ -12,6 +12,7 @@ import { ComparisonCard } from '@/components/analysis/comparison-card';
 import { IssueCard } from '@/components/analysis/issue-card';
 import { InsightsSection, generateInsights } from '@/components/analysis/insights-section';
 import { AnalysisIssue } from '@/lib/schema';
+import type { Recommendation } from '@/lib/analyzer';
 import {
   AlertTriangle,
   Shield,
@@ -194,14 +195,15 @@ export function ScanResults({ repoName }: ScanResultsProps) {
   }), [rawIssues]);
 
   const overallScore = report?.overallScore || 0;
-  const recommendations = report?.recommendations || [];
+  // Memoize recommendations to prevent unnecessary re-renders
+  const recommendations = useMemo(() => report?.recommendations || [], [report?.recommendations]);
   const securityScore = categoryScores.security;
   const performanceScore = categoryScores.performance;
   const maintainabilityScore = categoryScores.maintainability;
   const techDebtScore = report?.techDebtScore || 0;
   
   // PDF Export hooks
-  const { exportReport, isExporting: isExportingPDF } = usePDFExport();
+  const { exportReport } = usePDFExport();
   const { setOnExportPDF, setIsExportingPDF } = usePDFExportContext();
   
   // Prepare PDF export handler - only called when user clicks "Export PDF" button
@@ -216,6 +218,7 @@ export function ScanResults({ repoName }: ScanResultsProps) {
   }, [report, repoName, overallScore, techDebtScore, securityScore, performanceScore, maintainabilityScore, rawIssues, recommendations]);
   
   // Create stable export handler that uses refs - only created once
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const handleExportPDF = useCallback(async () => {
     const currentReport = reportRef.current;
     const currentData = dataRef.current;
@@ -236,7 +239,7 @@ export function ScanResults({ repoName }: ScanResultsProps) {
         impact: issue.impact || '',
         fix: issue.fix || '',
       })),
-      recommendations: Array.isArray(currentData.recommendations) ? currentData.recommendations.map((rec: any) => ({
+      recommendations: Array.isArray(currentData.recommendations) ? currentData.recommendations.map((rec: Recommendation) => ({
         title: rec.title || 'Recommendation',
         description: rec.description || '',
         priority: rec.priority || 5,

@@ -154,7 +154,6 @@ export async function POST() {
     // If user already exists, update instead of insert
     if (existingUser.length > 0) {
       console.log('User already exists, updating instead of inserting');
-      const existingUserRecord = existingUser[0];
       
       const updateData: {
         email: string;
@@ -196,6 +195,7 @@ export async function POST() {
         });
 
         // Don't return sensitive data (githubToken)
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         const { githubToken: _unusedToken, ...safeUser } = updatedUser;
         return NextResponse.json({ 
           success: true, 
@@ -283,6 +283,7 @@ export async function POST() {
       });
 
       // Don't return sensitive data (githubToken)
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { githubToken: _unusedToken, ...safeUser } = newUser;
       return NextResponse.json({ 
         success: true, 

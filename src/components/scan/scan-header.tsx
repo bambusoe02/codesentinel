@@ -22,7 +22,7 @@ interface ScanHeaderProps {
 export function ScanHeader({ repoName }: ScanHeaderProps) {
   const [, name] = repoName.split('/');
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
-  const { onExportPDF, isExportingPDF } = usePDFExportContext();
+  const { onExportPDF } = usePDFExportContext();
 
   return (
     <header className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-6 py-4">
