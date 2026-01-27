@@ -419,6 +419,37 @@ EXPOSE 3000
 CMD ["npm", "start"]
 ```
 
+## 🔒 Security Features
+
+CodeSentinel implements enterprise-grade security measures:
+
+### Input Validation & Sanitization
+- **Comprehensive validation** for all user inputs (strings, emails, tokens, arrays, numbers)
+- **Automatic sanitization** - Removes dangerous characters, null bytes, and control characters
+- **Format validation** - GitHub tokens, emails, and custom patterns
+- **Size limits** - Prevents DoS attacks with request size limits (1MB JSON, 10KB strings)
+- **Prototype pollution protection** - Blocks malicious object key injection
+
+### API Security
+- **Authentication middleware** - All sensitive routes protected with Clerk
+- **Request validation** - JSON body parsing with size and structure validation
+- **Pagination** - Prevents large payload attacks (max 100 items per request)
+- **Error handling** - Consistent error responses without information leakage
+- **Security headers** - X-Content-Type-Options, X-Frame-Options, CSP, and more
+
+### Database Security
+- **Parameterized queries** - Drizzle ORM prevents SQL injection
+- **Connection pooling** - Efficient connection management via Neon serverless
+- **Encrypted storage** - AES-256-GCM encryption for sensitive data (tokens)
+- **Batch queries** - Optimized queries prevent N+1 problems and reduce attack surface
+
+### Environment Security
+- **Variable validation** - Automatic validation of required environment variables
+- **Secret detection** - Development-mode detection of hardcoded secrets
+- **Configuration management** - Centralized configuration with validation
+
+See [SECURITY_IMPROVEMENTS.md](./SECURITY_IMPROVEMENTS.md) for detailed security documentation.
+
 ## 🎯 Usage
 
 ### For Engineering Managers
