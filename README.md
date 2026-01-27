@@ -37,6 +37,12 @@ The landing page highlights six core features in an elegant 2x3 grid layout:
 - **Bank-level encryption** - AES-256-GCM encryption for secure token storage
 - **Secure token management** for GitHub API access
 - **Role-based access control** and session management
+- **Input validation & sanitization** - Comprehensive validation for all user inputs
+- **XSS & injection protection** - Automatic sanitization of strings and JSON payloads
+- **Prototype pollution protection** - Prevents malicious object key injection
+- **Request size limits** - 1MB max for JSON bodies, 10KB for string fields
+- **Security headers** - X-Content-Type-Options, X-Frame-Options, CSP, and more
+- **Environment validation** - Automatic detection of hardcoded secrets in development
 
 ### 📊 AI-Powered Analysis
 - **Comprehensive code analysis** using advanced AI algorithms
@@ -69,12 +75,18 @@ The landing page highlights six core features in an elegant 2x3 grid layout:
 - **Intelligent caching** with TanStack Query
 - **Optimized bundle** with code splitting and lazy loading
 - **Optimistic UI** for instant user feedback on actions
+- **Batch database queries** - Optimized N+1 query problem with window functions
+- **API pagination** - Automatic pagination for large datasets (default: 20 items, max: 100)
+- **Connection pooling** - Neon serverless handles database connections efficiently
 
 ### 🛡️ Error Handling & Resilience
 - **Error Boundaries** - Graceful error recovery with user-friendly error messages
 - **Centralized logging** - Production-ready logger with development/production modes
 - **Improved loading states** - Skeleton loaders instead of empty screens or error states
 - **Smart error messages** - Context-aware error handling for better UX
+- **Global error handler** - Centralized API error handling with consistent response formats
+- **Database error handling** - Automatic handling of constraint violations and schema errors
+- **Safe async execution** - Wrapper utilities for error-safe async operations
 
 ## 🏗️ Architecture
 
@@ -96,6 +108,11 @@ code-sentinel/
 │   ├── encryption.ts     # Token encryption utilities
 │   ├── logger.ts         # Centralized logging utility
 │   ├── pdf-generator.ts  # PDF export utilities
+│   ├── api-error-handler.ts # Global error handling middleware
+│   ├── input-validation.ts  # Input validation & sanitization
+│   ├── pagination.ts        # Pagination utilities
+│   ├── async-wrapper.ts     # Safe async execution
+│   ├── env-validation.ts    # Environment variables validation
 │   └── stores/           # Zustand state management
 ├── hooks/                # Custom React hooks
 ├── public/               # Static assets & PWA files
