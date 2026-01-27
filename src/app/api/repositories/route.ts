@@ -86,6 +86,7 @@ export async function GET(request: NextRequest) {
       try {
         // Try to decrypt (if encrypted) - if it fails, assume it's plain text (for backward compatibility)
         githubToken = decrypt(user.githubToken);
+        logger.info('GitHub token retrieved from user record', { hasToken: !!githubToken });
       } catch (error) {
         // If decryption fails, token might be plain text or corrupted
         // Try using it as-is (for backward compatibility with non-encrypted tokens)
@@ -174,6 +175,11 @@ export async function GET(request: NextRequest) {
     const pagination = parsePagination(request);
 
     if (!githubToken) {
+      logger.warn('No GitHub token available, returning cached repositories only', {
+        cachedReposCount: reposWithAnalysis.length,
+        userId: user.id,
+      });
+      
       // ✅ Apply pagination to cached repos
       const paginatedRepos = reposWithAnalysis.slice(
         pagination.offset,
@@ -181,9 +187,19 @@ export async function GET(request: NextRequest) {
       );
       
       // Return cached repositories from database with analysis info (paginated)
-      return NextResponse.json(
-        createPaginatedResponse(paginatedRepos, reposWithAnalysis.length, pagination)
-      );
+      // Include a message to help user understand why repos might be missing
+      const paginatedResponse = createPaginatedResponse(paginatedRepos, reposWithAnalysis.length, pagination, {
+        message: reposWithAnalysis.length === 0 
+          ? 'No repositories found. Please connect your GitHub account or add a GitHub token in Settings to sync repositories.'
+          : undefined,
+      });
+      
+      // Return in format expected by frontend (repositories array)
+      return NextResponse.json({
+        repositories: paginatedResponse.data,
+        pagination: paginatedResponse.pagination,
+        ...(paginatedResponse.message && { message: paginatedResponse.message }),
+      });
     }
 
     // Fetch from GitHub API
@@ -282,9 +298,13 @@ export async function GET(request: NextRequest) {
 
     // ✅ Return paginated response
     const totalRepos = allGithubRepos.length;
-    return NextResponse.json(
-      createPaginatedResponse(syncedRepos, totalRepos, pagination)
-    );
+    const paginatedResponse = createPaginatedResponse(syncedRepos, totalRepos, pagination);
+    
+    // Return in format expected by frontend (repositories array)
+    return NextResponse.json({
+      repositories: paginatedResponse.data,
+      pagination: paginatedResponse.pagination,
+    });
   } catch (error) {
     logger.error('Error fetching repositories', error);
     
@@ -359,9 +379,13 @@ export async function GET(request: NextRequest) {
             fallbackPagination.offset + fallbackPagination.limit
           );
           
-          return NextResponse.json(
-            createPaginatedResponse(paginatedRepos, reposWithAnalysis.length, fallbackPagination)
-          );
+          const fallbackPaginatedResponse = createPaginatedResponse(paginatedRepos, reposWithAnalysis.length, fallbackPagination);
+          
+          // Return in format expected by frontend (repositories array)
+          return NextResponse.json({
+            repositories: fallbackPaginatedResponse.data,
+            pagination: fallbackPaginatedResponse.pagination,
+          });
         }
       }
     } catch (fallbackError) {

@@ -57,11 +57,12 @@ export function parsePagination(request: NextRequest): PaginationParams {
 export function createPaginatedResponse<T>(
   data: T[],
   total: number,
-  pagination: PaginationParams
-): PaginatedResponse<T> {
+  pagination: PaginationParams,
+  options?: { message?: string }
+): PaginatedResponse<T> & { message?: string } {
   const totalPages = Math.ceil(total / pagination.limit);
 
-  return {
+  const response: PaginatedResponse<T> & { message?: string } = {
     data,
     pagination: {
       page: pagination.page,
@@ -72,6 +73,12 @@ export function createPaginatedResponse<T>(
       hasPrev: pagination.page > 1,
     },
   };
+
+  if (options?.message) {
+    response.message = options.message;
+  }
+
+  return response;
 }
 
 /**
