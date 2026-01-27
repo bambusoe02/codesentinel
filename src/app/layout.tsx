@@ -6,7 +6,13 @@ import { ThemeProvider } from "@/components/theme-provider";
 import { Providers } from "@/components/providers";
 import { PWAInstall } from "@/components/pwa-install";
 import { ErrorBoundary } from "@/components/error-boundary";
+import { initEnvValidation } from "@/lib/env-validation";
 import "./globals.css";
+
+// Initialize environment validation on server startup
+if (typeof window === 'undefined') {
+  initEnvValidation();
+}
 
 // Check if Clerk is available on server
 let isClerkAvailable = false;
