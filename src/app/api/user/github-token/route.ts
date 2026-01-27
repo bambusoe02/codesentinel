@@ -5,6 +5,7 @@ import { eq } from 'drizzle-orm';
 import { NextResponse, NextRequest } from 'next/server';
 import { encrypt, isEncryptionConfigured } from '@/lib/encryption';
 import { logger } from '@/lib/logger';
+import { validateJsonBody, validateGitHubToken } from '@/lib/input-validation';
 
 export async function POST(request: NextRequest) {
   try {
@@ -22,15 +23,28 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const body = await request.json();
-    const { githubToken } = body;
-
-    if (!githubToken || typeof githubToken !== 'string') {
-      return NextResponse.json(
-        { error: 'GitHub token is required' },
+    // ✅ Validate and parse JSON body with size limits
+    const bodyValidation = await validateJsonBody(request);
+    if (!bodyValidation.valid) {
+      return bodyValidation.response || NextResponse.json(
+        { error: bodyValidation.error || 'Invalid request' },
         { status: 400 }
       );
     }
+
+    const body = bodyValidation.data as { githubToken?: unknown };
+    const githubToken = body.githubToken;
+
+    // ✅ Validate GitHub token format
+    const tokenValidation = validateGitHubToken(githubToken);
+    if (!tokenValidation.valid) {
+      return NextResponse.json(
+        { error: tokenValidation.error || 'Invalid GitHub token format' },
+        { status: 400 }
+      );
+    }
+
+    const validatedToken = tokenValidation.value!;
 
     // Check if encryption is configured
     if (!isEncryptionConfigured()) {
@@ -54,7 +68,7 @@ export async function POST(request: NextRequest) {
     // Encrypt token before storing
     let encryptedToken: string;
     try {
-      encryptedToken = encrypt(githubToken);
+      encryptedToken = encrypt(validatedToken);
     } catch (error) {
       logger.error('Error encrypting token', error);
       return NextResponse.json(

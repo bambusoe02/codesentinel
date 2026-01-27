@@ -2,12 +2,13 @@ import { auth } from '@clerk/nextjs/server';
 import { db } from '@/lib/db';
 import { users, repositories, analysisReports } from '@/lib/schema';
 import { eq, desc, inArray, sql } from 'drizzle-orm';
-import { NextResponse } from 'next/server';
+import { NextResponse, NextRequest } from 'next/server';
 import { GitHubClient, type GitHubRepository } from '@/lib/github';
 import { decrypt } from '@/lib/encryption';
 import { logger } from '@/lib/logger';
+import { parsePagination, createPaginatedResponse } from '@/lib/pagination';
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
     const { userId } = await auth();
 
@@ -169,17 +170,29 @@ export async function GET() {
       };
     });
 
+    // ✅ Parse pagination parameters
+    const pagination = parsePagination(request);
+
     if (!githubToken) {
-      // Return cached repositories from database with analysis info
-      return NextResponse.json({ 
-        repositories: reposWithAnalysis,
-        message: 'No GitHub token configured. Sign in with GitHub OAuth or add your token in Settings.'
-      });
+      // ✅ Apply pagination to cached repos
+      const paginatedRepos = reposWithAnalysis.slice(
+        pagination.offset,
+        pagination.offset + pagination.limit
+      );
+      
+      // Return cached repositories from database with analysis info (paginated)
+      return NextResponse.json(
+        createPaginatedResponse(paginatedRepos, reposWithAnalysis.length, pagination)
+      );
     }
 
     // Fetch from GitHub API
     const githubClient = new GitHubClient(githubToken);
-    const githubRepos = await githubClient.getUserRepositories();
+    const allGithubRepos = await githubClient.getUserRepositories();
+    
+    // ✅ Apply pagination to GitHub repos (client-side for now)
+    // Note: GitHub API has its own pagination, but we'll limit results here
+    const githubRepos = allGithubRepos.slice(pagination.offset, pagination.offset + pagination.limit);
 
     // Sync with database
     const syncedRepos = await Promise.all(
@@ -267,7 +280,11 @@ export async function GET() {
       })
     );
 
-    return NextResponse.json({ repositories: syncedRepos });
+    // ✅ Return paginated response
+    const totalRepos = allGithubRepos.length;
+    return NextResponse.json(
+      createPaginatedResponse(syncedRepos, totalRepos, pagination)
+    );
   } catch (error) {
     logger.error('Error fetching repositories', error);
     
@@ -335,7 +352,16 @@ export async function GET() {
             };
           });
 
-          return NextResponse.json({ repositories: reposWithAnalysis });
+          // ✅ Apply pagination to fallback repos
+          const fallbackPagination = parsePagination(request);
+          const paginatedRepos = reposWithAnalysis.slice(
+            fallbackPagination.offset,
+            fallbackPagination.offset + fallbackPagination.limit
+          );
+          
+          return NextResponse.json(
+            createPaginatedResponse(paginatedRepos, reposWithAnalysis.length, fallbackPagination)
+          );
         }
       }
     } catch (fallbackError) {
