@@ -43,6 +43,13 @@ next-env.d.ts
 # clerk configuration (can include secrets)
 /.clerk/
 
-# audit reports (local only)
+# audit reports, analysis reports, fix documentation, and additional docs (local only)
 AUDIT_REPORT.md
 FIXES_APPLIED.md
+ANALYSIS_REPORT.md
+SETUP_SUMMARY.md
+PRODUCTION_CHECKLIST.md
+MIGRATION_GUIDE.md
+DATABASE_SETUP.md
+SECURITY_IMPROVEMENTS.md
+PRODUCTION_SETUP.md
