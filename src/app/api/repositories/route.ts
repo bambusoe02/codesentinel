@@ -53,12 +53,6 @@ export async function GET(request: NextRequest) {
         detail: error?.detail,
         clerkId: userId,
       });
-      console.error('Database error details:', {
-        message: error?.message,
-        code: error?.code,
-        detail: error?.detail,
-      });
-      
       // Return empty array instead of error to prevent UI crash
       return NextResponse.json({ 
         repositories: [],
@@ -67,12 +61,6 @@ export async function GET(request: NextRequest) {
     }
 
     // Log user.id to debug UUID vs TEXT issue
-    console.log('User found for repositories query:', {
-      userId: user.id,
-      userIdType: typeof user.id,
-      userIdLength: user.id?.length,
-      clerkId: user.clerkId,
-    });
     logger.info('User found for repositories query', {
       userId: user.id,
       userIdType: typeof user.id,

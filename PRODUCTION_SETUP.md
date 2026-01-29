@@ -1,30 +1,30 @@
 # 🚀 CodeSentinel - Production Setup Guide
 
-## Przewodnik krok po kroku (Step-by-Step Guide)
+## Step-by-Step Guide
 
-### KROK 1: Automatyczne utworzenie tabel w bazie Neon
+### STEP 1: Automatic Database Table Creation in Neon
 
-**Opcja A: Użyj skryptu automatycznego (zalecane):**
+**Option A: Use automatic script (recommended):**
 ```bash
 npm run setup:production
 ```
 
-Skrypt automatycznie:
-- ✅ Sprawdzi czy `DATABASE_URL` jest ustawiony
-- ✅ Wygeneruje `ENCRYPTION_KEY` jeśli nie istnieje
-- ✅ Wykona `npm run db:push` do utworzenia tabel
-- ✅ Zweryfikuje czy tabele zostały utworzone
-- ✅ Pokaże podsumowanie następnych kroków
+The script automatically:
+- ✅ Checks if `DATABASE_URL` is set
+- ✅ Generates `ENCRYPTION_KEY` if it doesn't exist
+- ✅ Runs `npm run db:push` to create tables
+- ✅ Verifies that tables were created
+- ✅ Shows summary of next steps
 
-**Opcja B: Ręcznie:**
+**Option B: Manual:**
 ```bash
-# 1. Ustaw DATABASE_URL
+# 1. Set DATABASE_URL
 export DATABASE_URL="postgresql://neondb_owner:npg_ePYVWi6nMT7F@ep-bitter-brook-ag1latts-pooler.c-2.eu-central-1.aws.neon.tech/neondb?sslmode=require"
 
-# 2. Uruchom push schematu
+# 2. Run schema push
 npm run db:push
 
-# 3. Zweryfikuj w Neon Dashboard → SQL Editor
+# 3. Verify in Neon Dashboard → SQL Editor
 SELECT table_name FROM information_schema.tables WHERE table_schema = 'public';
 ```
 
@@ -187,14 +187,14 @@ git push origin main
 ### Problem: "Clerk development keys"
 **Rozwiązanie:** Upewnij się że używasz **Production** keys w Vercel, nie development!
 
-### Problem: "404 na API routes"
-**Rozwiązanie:** Sprawdź czy tabele istnieją w Neon (Krok 1)
+### Problem: "404 on API routes"
+**Solution:** Check if tables exist in Neon (Step 1)
 
 ### Problem: "Repositories not loading"
-**Rozwiązanie:**
-1. Sprawdź Vercel Logs dla błędów
-2. Sprawdź czy user został zsynchronizowany po zalogowaniu
-3. Sprawdź czy GitHub token został automatycznie pobrany z Clerk
+**Solution:**
+1. Check Vercel Logs for errors
+2. Check if user was synchronized after login
+3. Check if GitHub token was automatically retrieved from Clerk
 
 ### Problem: "Encryption key not configured"
 **Rozwiązanie:** Upewnij się że `ENCRYPTION_KEY` jest ustawiony w Vercel environment variables

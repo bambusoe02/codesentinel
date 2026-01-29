@@ -59,7 +59,7 @@ export const repositories = pgTable('repositories', {
 
 // Analysis reports table
 export const analysisReports = pgTable('analysis_reports', {
-  // ✅ KOLEJNOŚĆ MUSI BYĆ JAK W BAZIE!
+  // ✅ ORDER MUST MATCH DATABASE SCHEMA!
   id: serial('id').primaryKey(),
                                        repositoryId: integer('repository_id').references(() => repositories.id).notNull(),
                                        analysisDate: timestamp('analysis_date').defaultNow(),
@@ -73,7 +73,7 @@ export const analysisReports = pgTable('analysis_reports', {
                                        performanceScore: integer('performance_score'),
                                        techDebtScore: integer('tech_debt_score'),
                                        recommendations: jsonb('recommendations').$type<Recommendation[]>(),
-                                       userId: text('user_id').references(() => users.id).notNull(), // ✅ NA KOŃCU!
+                                       userId: text('user_id').references(() => users.id).notNull(), // ✅ MUST BE LAST!
 });
 
 // Repository metrics table

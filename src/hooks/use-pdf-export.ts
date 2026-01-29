@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { PDFGenerator, PDFReportData, downloadPDF, generateReportFilename } from '@/lib/pdf-generator';
 import { toast } from 'sonner';
+import { logger } from '@/lib/logger';
 
 export function usePDFExport() {
   const [isExporting, setIsExporting] = useState(false);
@@ -16,7 +17,7 @@ export function usePDFExport() {
 
       toast.success('PDF report downloaded successfully!');
     } catch (error) {
-      console.error('PDF export failed:', error);
+      logger.error('PDF export failed', error);
       toast.error('Failed to generate PDF report');
     } finally {
       setIsExporting(false);
@@ -34,7 +35,7 @@ export function usePDFExport() {
 
       toast.success('PDF report downloaded successfully!');
     } catch (error) {
-      console.error('PDF export failed:', error);
+      logger.error('PDF export failed', error);
       toast.error('Failed to generate PDF report');
     } finally {
       setIsExporting(false);

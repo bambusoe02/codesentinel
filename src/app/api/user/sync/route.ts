@@ -73,7 +73,7 @@ export async function POST() {
     }
 
     // Check if user exists in database (for UUID migration) with error handling
-    console.log('Checking for existing user with clerkId:', userId);
+    logger.info('Checking for existing user with clerkId', { clerkId: userId });
     let existingUser: Array<typeof users.$inferSelect> = [];
     try {
       existingUser = await db
@@ -83,11 +83,6 @@ export async function POST() {
         .limit(1);
     } catch (queryError: unknown) {
       const error = queryError as { message?: string; code?: string; detail?: string };
-      console.error('Failed to query existing user:', {
-        error: error?.message,
-        code: error?.code,
-        detail: error?.detail,
-      });
       logger.error('Failed to query existing user', {
         error: error?.message,
         code: error?.code,
@@ -103,7 +98,7 @@ export async function POST() {
       const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(existingUserRecord.id);
       
       if (isUUID && existingUserRecord.clerkId === userId) {
-        console.log('Migrating user.id from UUID to Clerk userId:', {
+        logger.info('Migrating user.id from UUID to Clerk userId', {
           oldId: existingUserRecord.id,
           newId: userId,
         });
@@ -127,13 +122,9 @@ export async function POST() {
             .set({ id: userId })
             .where(eq(users.clerkId, userId));
           
-          console.log('Successfully migrated user.id from UUID to Clerk userId');
+          logger.info('Successfully migrated user.id from UUID to Clerk userId');
         } catch (migrationError: unknown) {
           const error = migrationError as { message?: string; code?: string; detail?: string };
-          console.error('Migration failed, continuing with update:', {
-            error: error?.message,
-            code: error?.code,
-          });
           logger.error('Failed to migrate user.id from UUID to Clerk userId', {
             error: error?.message,
             code: error?.code,
@@ -145,7 +136,7 @@ export async function POST() {
     }
 
     // Upsert user - create or update
-    console.log('Upserting user:', {
+    logger.info('Upserting user', {
       userId,
       email: userEmail,
       hasGitHubToken: !!encryptedGitHubToken,
@@ -153,7 +144,7 @@ export async function POST() {
 
     // If user already exists, update instead of insert
     if (existingUser.length > 0) {
-      console.log('User already exists, updating instead of inserting');
+      logger.info('User already exists, updating instead of inserting');
       
       const updateData: {
         email: string;
@@ -204,11 +195,6 @@ export async function POST() {
         });
       } catch (updateError: unknown) {
         const error = updateError as { message?: string; code?: string; detail?: string };
-        console.error('Failed to update user:', {
-          error: error?.message,
-          code: error?.code,
-          detail: error?.detail,
-        });
         logger.error('Failed to update user', {
           error: error?.message,
           code: error?.code,
@@ -222,20 +208,15 @@ export async function POST() {
     // User doesn't exist, create new one
     try {
       // Add detailed logging BEFORE insert
-      console.log('=== ATTEMPTING USER INSERT ===');
-      console.log('Database available:', !!db);
-      console.log('Insert values:', {
-        id: userId,
-        clerkId: userId,
+      logger.info('Attempting user insert', {
+        databaseAvailable: !!db,
+        userId,
         email: userEmail,
-        firstName: clerkUser.firstName || null,
-        lastName: clerkUser.lastName || null,
-        githubUsername: githubUsername,
         hasToken: !!encryptedGitHubToken,
       });
       
       if (!db) {
-        console.error('❌ Database is null!');
+        logger.error('Database connection is null');
         throw new Error('Database connection is null');
       }
       
@@ -253,24 +234,25 @@ export async function POST() {
         })
         .returning();
 
-      console.log('=== INSERT RESULT ===');
-      console.log('Result type:', typeof result);
-      console.log('Is array:', Array.isArray(result));
-      console.log('Result length:', result?.length);
+      logger.info('Insert result', {
+        resultType: typeof result,
+        isArray: Array.isArray(result),
+        resultLength: result?.length,
+      });
 
       if (!result || result.length === 0) {
-        console.error('❌ Insert returned empty result!');
+        logger.error('Insert returned empty result');
         throw new Error('Insert returned empty result');
       }
 
       const [newUser] = result;
 
       if (!newUser) {
-        console.error('❌ First element of result is undefined!');
+        logger.error('First element of result is undefined');
         throw new Error('First element of result is undefined');
       }
 
-      console.log('✅ User created successfully:', {
+      logger.info('User created successfully', {
         id: newUser.id,
         clerkId: newUser.clerkId,
         email: newUser.email,
@@ -294,20 +276,21 @@ export async function POST() {
       // Parse error using utility function
       const parsedError = parseDbError(insertError);
       
-      // Zwiększ szczegółowość logowania błędów
-      console.error('=== INSERT ERROR ===');
-      console.error('Error message:', parsedError.message);
-      console.error('Error code:', parsedError.code);
-      console.error('Error detail:', parsedError.detail);
-      console.error('Error constraint:', parsedError.constraint);
-      console.error('Full error:', JSON.stringify(parsedError, null, 2));
+      // Detailed error logging
+      logger.error('Insert error', {
+        message: parsedError.message,
+        code: parsedError.code,
+        detail: parsedError.detail,
+        constraint: parsedError.constraint,
+        fullError: parsedError,
+      });
       
       // If user already exists (unique constraint violation), update instead
       if (isUniqueConstraintError(insertError) || 
           parsedError.constraint?.includes('users_pkey') || 
           parsedError.constraint?.includes('clerk_id') || 
           parsedError.detail?.includes('already exists')) {
-        console.log('User already exists (detected from error), updating instead');
+        logger.info('User already exists (detected from error), updating instead');
         
         const updateData: {
           email: string;
@@ -336,12 +319,6 @@ export async function POST() {
             .where(eq(users.clerkId, userId))
             .returning();
 
-          console.log('✅ User updated successfully (after insert error):', {
-            id: updatedUser.id,
-            clerkId: updatedUser.clerkId,
-            email: updatedUser.email,
-          });
-
           logger.info('User updated successfully (after insert error)', {
             userId: updatedUser.id,
             clerkId: updatedUser.clerkId,
@@ -354,11 +331,6 @@ export async function POST() {
           });
         } catch (updateError: unknown) {
           const updateErr = updateError as { message?: string; code?: string; detail?: string };
-          console.error('Failed to update user after insert error:', {
-            error: updateErr?.message,
-            code: updateErr?.code,
-            detail: updateErr?.detail,
-          });
           logger.error('Failed to update user after insert error', {
             error: updateErr?.message,
             code: updateErr?.code,

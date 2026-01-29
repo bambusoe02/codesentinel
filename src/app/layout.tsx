@@ -12,17 +12,17 @@ import "./globals.css";
 // Wrapped in try-catch to prevent breaking app if validation fails
 if (typeof window === 'undefined') {
   try {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const { initEnvValidation } = require('@/lib/env-validation');
-    if (typeof initEnvValidation === 'function') {
-      initEnvValidation();
-    }
+    // Dynamic import to avoid breaking if module doesn't exist
+    import('@/lib/env-validation').then(({ initEnvValidation }) => {
+      if (typeof initEnvValidation === 'function') {
+        initEnvValidation();
+      }
+    }).catch(() => {
+      // Silently fail - validation is non-critical for app startup
+    });
   } catch (error) {
     // Silently fail - validation is non-critical for app startup
     // Errors are logged internally by the validation function
-    if (process.env.NODE_ENV === 'development') {
-      console.warn('Environment validation initialization failed (non-critical):', error);
-    }
   }
 }
 
@@ -36,17 +36,23 @@ try {
   const hasSecretKey = !!process.env.CLERK_SECRET_KEY;
   isClerkAvailable = hasPublishableKey && hasSecretKey;
 
-  // Only log in development
+  // Only log in development using logger
   if (process.env.NODE_ENV === 'development') {
-    console.log('Clerk availability check:', {
-      hasPublishableKey,
-      hasSecretKey,
-      isClerkAvailable,
-      nodeEnv: process.env.NODE_ENV,
-      publishableKeyPrefix: process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY?.substring(0, 10) + '...',
-      hasDatabaseUrl: !!process.env.DATABASE_URL,
-      hasGitHubToken: !!process.env.GITHUB_TOKEN
-    });
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const { logger } = require('@/lib/logger');
+      logger.info('Clerk availability check', {
+        hasPublishableKey,
+        hasSecretKey,
+        isClerkAvailable,
+        nodeEnv: process.env.NODE_ENV,
+        publishableKeyPrefix: process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY?.substring(0, 10) + '...',
+        hasDatabaseUrl: !!process.env.DATABASE_URL,
+        hasGitHubToken: !!process.env.GITHUB_TOKEN
+      });
+    } catch {
+      // Logger not available, skip
+    }
   }
 } catch {
   isClerkAvailable = false;

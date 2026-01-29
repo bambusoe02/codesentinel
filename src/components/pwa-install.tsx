@@ -51,11 +51,15 @@ export function PWAInstall() {
     if ('serviceWorker' in navigator && process.env.NODE_ENV === 'production') {
       navigator.serviceWorker
         .register('/sw.js')
-        .then((registration) => {
-          console.log('Service Worker registered:', registration);
+        .then(() => {
+          // Service worker registered successfully
         })
         .catch((error) => {
-          console.error('Service Worker registration failed:', error);
+          // Service worker registration failed - non-critical, fail silently
+          if (process.env.NODE_ENV === 'development') {
+            // eslint-disable-next-line no-console
+            console.warn('Service Worker registration failed:', error);
+          }
         });
     }
 
@@ -79,7 +83,11 @@ export function PWAInstall() {
       setDeferredPrompt(null);
       setShowInstallPrompt(false);
     } catch (error) {
-      console.error('Install prompt failed:', error);
+      // Install prompt failed - log in development only
+      if (process.env.NODE_ENV === 'development') {
+        // eslint-disable-next-line no-console
+        console.error('Install prompt failed:', error);
+      }
       toast.error('Installation failed. Please try again.');
     }
   };

@@ -26,6 +26,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { usePDFExport } from '@/hooks/use-pdf-export';
 import { PDFReportData } from '@/lib/pdf-generator';
 import { usePDFExportContext } from '@/contexts/pdf-export-context';
+import { logger } from '@/lib/logger';
 
 // Lazy load heavy components
 const TrendChart = lazy(() =>
@@ -54,34 +55,25 @@ async function fetchAnalysisResults(repoName: string) {
     if (!response.ok) {
       // Handle 404 gracefully - analysis might not exist yet
       if (response.status === 404) {
-        console.log('Analysis not found (404) - this is normal if analysis is in progress');
+        // Analysis not found - this is normal if analysis is in progress
         throw new Error('ANALYSIS_NOT_FOUND'); // Special error code
       }
       
       const errorMessage = data.error || data.details || `Failed to fetch analysis results: ${response.status}`;
-      console.error('Failed to fetch analysis results:', {
-        status: response.status,
-        error: errorMessage,
-        data,
-      });
+      // Error will be logged by error boundary or calling component
       throw new Error(errorMessage);
     }
 
     if (!data.report) {
-      console.error('API returned success but no report:', data);
+      // Error will be logged by error boundary or calling component
       throw new Error('Invalid response: report missing');
     }
 
-    console.log('Fetched analysis results successfully:', {
-      reportId: data.report.id,
-      isAIPowered: data.report.isAIPowered,
-      overallScore: data.report.overallScore,
-      createdAt: data.report.createdAt,
-    });
+    // Success - no logging needed in production
 
     return data.report;
   } catch (error) {
-    console.error('Error in fetchAnalysisResults:', error);
+    // Error will be logged by error boundary or calling component
     throw error;
   }
 }
@@ -259,7 +251,7 @@ export function ScanResults({ repoName }: ScanResultsProps) {
     try {
       await exportReport(pdfData);
     } catch (error) {
-      console.error('PDF export failed:', error);
+      logger.error('PDF export failed', error);
     } finally {
       setIsExportingPDF(false);
     }
@@ -285,17 +277,7 @@ export function ScanResults({ repoName }: ScanResultsProps) {
        (report as { isAIPowered?: number | boolean })?.isAIPowered === true)
     : false;
   
-  // Debug logging (only in development)
-  if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development' && report) {
-    console.log('✅ Analysis loaded:', {
-      reportId: report.id,
-      isAIPowered,
-      reportIsAIPowered: report.isAIPowered,
-      overallScore: report.overallScore,
-      issuesCount: Array.isArray(report.issues) ? report.issues.length : 0,
-      createdAt: report.createdAt,
-    });
-  }
+  // Debug logging removed - use React DevTools or logger if needed
 
   // Get previous analysis for comparison
   const previousAnalysis = historyData?.history?.[1];

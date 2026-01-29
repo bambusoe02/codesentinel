@@ -1,23 +1,23 @@
 # 🔒 Security & Performance Improvements
 
-## Wprowadzone poprawki bezpieczeństwa i wydajności
+## Security and Performance Improvements Implemented
 
 ### ✅ 1. Global Error Handling Middleware
 
 **Plik:** `src/lib/api-error-handler.ts`
 
-- Centralizowane zarządzanie błędami API
-- Spójne formaty odpowiedzi błędów
-- Automatyczne logowanie błędów
-- Obsługa błędów bazy danych (unique constraint, foreign key, schema errors)
-- Ukrywanie szczegółów błędów w produkcji
+- Centralized API error management
+- Consistent error response formats
+- Automatic error logging
+- Database error handling (unique constraint, foreign key, schema errors)
+- Hiding error details in production
 
-**Użycie:**
+**Usage:**
 ```typescript
 import { withErrorHandler, AppError } from '@/lib/api-error-handler';
 
 export const GET = withErrorHandler(async (req, { params }) => {
-  // Twój kod - błędy są automatycznie obsługiwane
+  // Your code - errors are automatically handled
   if (!data) {
     throw new AppError('Data not found', 404, 'NOT_FOUND');
   }
@@ -25,11 +25,11 @@ export const GET = withErrorHandler(async (req, { params }) => {
 });
 ```
 
-### ✅ 2. Optymalizacja N+1 Query Problem
+### ✅ 2. N+1 Query Problem Optimization
 
-**Plik:** `src/app/api/repositories/route.ts`
+**File:** `src/app/api/repositories/route.ts`
 
-**Przed:** N zapytań do bazy (jeden na każde repozytorium)
+**Before:** N database queries (one per repository)
 ```typescript
 // ❌ N+1 problem
 const reposWithAnalysis = await Promise.all(
@@ -43,7 +43,7 @@ const reposWithAnalysis = await Promise.all(
 );
 ```
 
-**Po:** 1 batch query dla wszystkich repozytoriów
+**After:** 1 batch query for all repositories
 ```typescript
 // ✅ Batch query z ROW_NUMBER window function
 const allAnalyses = await database
@@ -197,4 +197,5 @@ export const GET = withErrorHandler(async () => {
 - Error handling jest backward compatible - istniejące routes działają normalnie
 - N+1 query optimization działa automatycznie dla `/api/repositories`
 - Environment validation uruchamia się przy starcie aplikacji (tylko logowanie, nie blokuje)
+
 

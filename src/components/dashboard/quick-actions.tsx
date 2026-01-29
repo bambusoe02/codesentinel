@@ -13,6 +13,7 @@ import {
 import { useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { toast } from 'sonner';
+import { logger } from '@/lib/logger';
 
 export function QuickActions() {
   const queryClient = useQueryClient();
@@ -33,7 +34,7 @@ export function QuickActions() {
       
       toast.success('Data refreshed successfully');
     } catch (error) {
-      console.error('Failed to refresh data:', error);
+      logger.error('Failed to refresh data', error);
       toast.error('Failed to refresh data. Please try again.');
     } finally {
       setIsRefreshing(false);
