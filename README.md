@@ -1,9 +1,12 @@
 # 🚀 CodeSentinel - AI GitHub Repository Analyzer
 
+[![CI](https://github.com/bambusoe02/codesentinel/workflows/CI/badge.svg)](https://github.com/bambusoe02/codesentinel/actions)
 [![Next.js](https://img.shields.io/badge/Next.js-16.1-black)](https://nextjs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue)](https://www.typescriptlang.org/)
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind-4.0-38B2AC)](https://tailwindcss.com/)
 [![Vercel](https://img.shields.io/badge/Vercel-Deploy-000000)](https://vercel.com/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](http://makeapullrequest.com)
 
 **Production-ready AI-powered GitHub repository analysis platform.** Enterprise-grade intelligent code analysis that identifies tech debt, security vulnerabilities, and performance bottlenecks in codebases.
 
@@ -693,6 +696,10 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## 📞 Support
 
 - **Email**: bambusoe@gmail.com
+
+## 🔑 Keywords
+
+**AI code analysis**, **GitHub repository analyzer**, **security scanning**, **tech debt detection**, **performance analysis**, **PDF reports**, **enterprise-grade**, **Clerk authentication**, **PostgreSQL**, **Next.js 16**, **TypeScript**, **production-ready**, **CI/CD**, **Docker**, **Vercel deployment**, **code quality**, **automated testing**, **security vulnerabilities**, **engineering tools**, **codebase health**, **technical debt**, **performance optimization**
 
 ---
 
