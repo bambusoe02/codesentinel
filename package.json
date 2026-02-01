@@ -17,7 +17,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint",
+    "lint": "next lint",
     "type-check": "tsc --noEmit",
     "build:check": "npm run lint && npm run type-check && npm run build",
     "test": "jest",
