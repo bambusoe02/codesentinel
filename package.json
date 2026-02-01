@@ -34,7 +34,7 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.71.2",
-    "@clerk/nextjs": "^6.36.8",
+    "@clerk/nextjs": "^6.37.1",
     "@neondatabase/serverless": "^1.0.2",
     "@octokit/graphql": "^9.0.3",
     "@octokit/rest": "^22.0.1",
